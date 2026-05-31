@@ -1,0 +1,33 @@
+{
+  "name": "bomber-man-backend",
+  "version": "1.0.0",
+  "description": "this is the backend of our game bomber-man-rangers",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahtalbi/bomberman-dom.git"
+  },
+  "keywords": [
+    "bomber-man",
+    "bomber-man-rangers",
+    "Rangers",
+    "Bomberman"
+  ],
+  "authors": [
+    "obenmbar",
+    "ahtalbi",
+    "mohnouri"
+  ],
+  "bugs": {
+    "url": "https://github.com/ahtalbi/bomberman-dom/issues"
+  },
+  "homepage": "https://github.com/ahtalbi/bomberman-dom#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
