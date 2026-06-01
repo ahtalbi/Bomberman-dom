@@ -1,31 +1,32 @@
 import http from 'http';
 import dotenv from 'dotenv';
+import { WebSocketServer } from "ws";
+import { StaticHandler } from './utils/static.js';
 
 dotenv.config();
 
 function main() {
-    http.createServer((req, res) => {
-        if (req.url === '/' && req.method === 'GET') {
-            res.writeHead(200)
-            res.end('Home page')
-        }
+    const server = http.createServer(StaticHandler);
+    const wss = new WebSocketServer({ server });
 
-        else if (req.url === '/join' && req.method === 'POST') {
-            res.writeHead(200)
-            res.end('Join route')
-        }
+    let counter = 0;
+    wss.on("connection", (ws) => {
+        console.log("new player entered", counter);
+        counter++;
+    });
 
-        else {
-            res.writeHead(404)
-            res.end('Not found')
-        }
+    wss.on("close", (ws) => {
+        console.log("the player quite", counter);
+        counter--;
+    });
+
+    server.listen(process.env.PORT, () => {
+        console.log(`Server is running on http://localhost:${process.env.PORT}`)
     })
-        .listen(process.env.PORT, () => {
-            console.log(`Backend is running on http://localhost:${process.env.PORT}`)
-        })
-        .on("error", (e) => {
-            console.error(`Server error: ${e.message}`)
-        })
+
+    server.on("error", (e) => {
+        console.error(`Server error: ${e.message}`)
+    })
 };
 
 main();
