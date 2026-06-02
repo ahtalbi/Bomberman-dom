@@ -1,7 +1,17 @@
-import { render } from "../../mini-framework/dom";
+import { createElement, render } from "../../mini-framework/dom";
+import router from "../../mini-framework/mini-framework";
+import Lobby from "../pages/lobby";
 
 const root = document.getElementById("root");
 const wss = new WebSocket("ws://localhost:5000");
+
+router.on("/", () => {
+    console.log("/ we are in this route");
+    
+    render(<Lobby />, root);
+});
+
+router.listen(() => {alert("404")});
 
 wss.addEventListener("open", () => {
     console.log("Connected");

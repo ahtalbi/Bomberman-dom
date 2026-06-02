@@ -6,11 +6,16 @@ export function createElement(type, props, ...children) {
     const ele = document.createElement(type);
 
     for (const key in props || {}) {
-        ele.setAttribute(key, props[key]);
+        if (key.startsWith("on") && typeof props[key] === "function") {
+            const eventName = key.slice(2).toLowerCase();
+            ele.addEventListener(eventName, props[key]);
+        } else {
+            ele.setAttribute(key, props[key]);
+        }
     }
 
     const flatChildren = children.flat(Infinity);
-    ele.append( ...flatChildren.filter( child => child !== null && child !== undefined && child !== false));
+    ele.append(...flatChildren.filter(child => child !== null && child !== undefined && child !== false));
 
     return ele;
 }
