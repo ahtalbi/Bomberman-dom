@@ -1,15 +1,19 @@
 import { createElement } from "../../mini-framework/dom";
+import wss from "../app/app";
 
 function Lobby() {
     let playerEnter = (e) => {
-        console.log("RIGHTT HERE");
-        
         e.preventDefault();
 
         const formData = new FormData(e.currentTarget);
         const nickname = formData.get("nickname");
 
         console.log(nickname);
+        
+        wss.send(JSON.stringify({
+            type: "nickname_of_the_player",
+            nickname: nickname
+        }));
     }
 
     return (

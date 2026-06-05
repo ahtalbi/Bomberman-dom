@@ -2,6 +2,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 import { WebSocketServer } from "ws";
 import { StaticHandler } from './utils/static.js';
+import { handleWebsocket } from './utils/websocket.js';
 
 dotenv.config();
 
@@ -11,6 +12,10 @@ function main() {
 
     wss.on("connection", (ws) => {
         console.log("new player entered");
+
+        ws.on("message", (message) => {
+            handleWebsocket(JSON.parse(message));
+        })
 
         ws.on("close", (ws) => {
             console.log("the player quite");

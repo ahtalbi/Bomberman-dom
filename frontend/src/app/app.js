@@ -13,8 +13,15 @@ router.on("/", () => {
 
 router.listen(() => {alert("404")});
 
-wss.addEventListener("open", () => {
-    console.log("Connected");
+wss.addEventListener("open", (ws) => {
+    wss.send(JSON.stringify({
+        type: "nickname_of_the_player",
+        nickname: "Player1"
+    }));
+});
+
+wss.addEventListener("message", (event) => {
+    console.log("Received:", event.data);
 });
 
 wss.addEventListener("error", (err) => {
@@ -24,3 +31,5 @@ wss.addEventListener("error", (err) => {
 wss.addEventListener("close", () => {
     console.log("Closed");
 });
+
+export default wss;
