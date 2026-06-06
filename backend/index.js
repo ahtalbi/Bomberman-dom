@@ -11,14 +11,12 @@ function main() {
     const wss = new WebSocketServer({ server });
 
     wss.on("connection", (ws) => {
-        console.log("new player entered");
-
         ws.on("message", (message) => {
-            handleWebsocket(JSON.parse(message));
+            handleWebsocket(JSON.parse(message), ws);
         })
 
         ws.on("close", (ws) => {
-            console.log("the player quite");
+            //tell the room that the player left
         });
     });
 

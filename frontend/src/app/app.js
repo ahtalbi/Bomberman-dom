@@ -14,10 +14,7 @@ router.on("/", () => {
 router.listen(() => {alert("404")});
 
 wss.addEventListener("open", (ws) => {
-    wss.send(JSON.stringify({
-        type: "nickname_of_the_player",
-        nickname: "Player1"
-    }));
+    
 });
 
 wss.addEventListener("message", (event) => {
