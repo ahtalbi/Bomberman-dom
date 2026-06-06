@@ -1,26 +1,17 @@
 import { createElement } from "../../mini-framework/dom";
-import wss from "../app/app";
 
-function Lobby() {
-    let playerEnter = (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.currentTarget);
-        const nickname = formData.get("nickname");
-
-        console.log(nickname);
-        
-        wss.send(JSON.stringify({
-            type: "nickname_of_the_player",
-            nickname: nickname
-        }));
-    }
+function Lobby({ roomId, playersCount, secondsLeft, gameStarted }) {
+    const timerText = secondsLeft === null || secondsLeft === undefined
+        ? "Waiting for one more player"
+        : `${secondsLeft} seconds`;
 
     return (
-        <form onSubmit={playerEnter}>
-            <input type="text" name="nickname" placeholder="eneter your name" />
-            <button type="submit">start playing</button>
-        </form>
+        <div>
+            <h1>Lobby</h1>
+            <p>Room ID: {roomId}</p>
+            <p>Players: {playersCount} / 4</p>
+            <p>Timer: {gameStarted ? "Game started" : timerText}</p>
+        </div>
     )
 }
 

@@ -17,7 +17,7 @@ class RoomsHandler {
         const lastRoom = this.Rooms.get(lastKey);
         const player = new Player(nickname, ws);
 
-        if (lastRoom && lastRoom.length < 4) {
+        if (lastRoom && lastRoom.length < 4 && !lastRoom.inGame) {
             lastRoom.addPlayer(player);
         } else {
             this.addRoom();
@@ -32,6 +32,8 @@ class Room {
         this.inLobby = false;
         this.inGame = false;
         this.players = [];
+        this.secondsLeft = 30;
+        this.timer = null;
     }
 
     addPlayer(player) {
@@ -41,23 +43,54 @@ class Room {
             throw new Error("Room is full");
         }
 
-        if (this.players.length === 2) {
-            let timer = setInterval(() => {
-                this.broadcast({
-                    type: "timer_of_the_lobby",
-                    roomId: this.id,
-                });
-            }, 1000);
+        this.broadcastRoomUpdate();
 
-            setTimeout(() => {
-                clearInterval(timer);
-                this.broadcast({
-                    type: "room_update",
-                    roomId: this.id,
-                });
-                this.inGame = true;
-            }, 30000);
+        if (this.players.length === 2) {
+            this.startCountdown();
         }
+    }
+
+    startCountdown() {
+        this.inLobby = true;
+        this.broadcastLobbyTimer();
+
+        this.timer = setInterval(() => {
+            this.secondsLeft--;
+
+            if (this.secondsLeft <= 0) {
+                clearInterval(this.timer);
+                this.timer = null;
+                this.inLobby = false;
+                this.inGame = true;
+
+                this.broadcast({
+                    type: "game_started",
+                    roomId: this.id,
+                    playersCount: this.players.length,
+                });
+                return;
+            }
+
+            this.broadcastLobbyTimer();
+        }, 1000);
+    }
+
+    broadcastRoomUpdate() {
+        this.broadcast({
+            type: "room_update",
+            roomId: this.id,
+            playersCount: this.players.length,
+            secondsLeft: this.timer ? this.secondsLeft : null,
+        });
+    }
+
+    broadcastLobbyTimer() {
+        this.broadcast({
+            type: "lobby_timer",
+            roomId: this.id,
+            playersCount: this.players.length,
+            secondsLeft: this.secondsLeft,
+        });
     }
 
     broadcast(message) {
