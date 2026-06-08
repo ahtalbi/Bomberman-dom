@@ -24,7 +24,25 @@ class RoomsHandler {
             this.Rooms.get([...this.Rooms.keys()].at(-1)).addPlayer(player);
         }
     }
+
+    removePlayer(ws) {
+        for (const [roomId, room] of this.Rooms) {
+            if (!room.removePlayer(ws)) continue;
+            
+            if (room.length === 0) {
+                this.Rooms.delete(roomId);
+            }
+            break;
+        }
+    }
 }
+
+const config = {
+    waitTime: 20,
+    startTime: 10,
+    waitingText: "Waiting for players",
+    startingText: "Starting the game",
+};
 
 class Room {
     constructor() {
@@ -32,7 +50,7 @@ class Room {
         this.inLobby = false;
         this.inGame = false;
         this.players = [];
-        this.secondsLeft = 30;
+        this.secondsLeft = config.waitTime;
         this.timer = null;
     }
 
@@ -50,6 +68,23 @@ class Room {
         }
     }
 
+    removePlayer(ws) {
+        const playerIndex = this.players.findIndex(player => player.ws === ws);
+
+        if (playerIndex === -1) return false;
+
+        this.players.splice(playerIndex, 1);
+
+        if (this.players.length === 0) {
+            clearInterval(this.timer);
+            this.timer = null;
+            return true;
+        }
+
+        this.broadcastRoomUpdate();
+        return true;
+    }
+
     startCountdown() {
         this.inLobby = true;
         this.broadcastLobbyTimer();
@@ -57,11 +92,17 @@ class Room {
         this.timer = setInterval(() => {
             this.secondsLeft--;
 
-            if (this.secondsLeft <= 0) {
+            if (this.secondsLeft <= 0 && !this.inGame) {
+                this.inGame = true;
+                this.secondsLeft = config.startTime;
+                this.broadcastLobbyTimer();
+                return;
+            }
+
+            if (this.secondsLeft <= 0 && this.inGame) {
                 clearInterval(this.timer);
                 this.timer = null;
                 this.inLobby = false;
-                this.inGame = true;
 
                 this.broadcast({
                     type: "game_started",
@@ -81,6 +122,7 @@ class Room {
             roomId: this.id,
             playersCount: this.players.length,
             secondsLeft: this.timer ? this.secondsLeft : null,
+            text: this.timer ? this.getLobbyText() : "Waiting for more players",
         });
     }
 
@@ -90,6 +132,7 @@ class Room {
             roomId: this.id,
             playersCount: this.players.length,
             secondsLeft: this.secondsLeft,
+            text: this.getLobbyText(),
         });
     }
 
@@ -101,6 +144,10 @@ class Room {
 
     getIdRoom() {
         return this.id;
+    }
+
+    getLobbyText() {
+        return this.inGame ? config.startingText : config.waitingText;
     }
 
     get length() {

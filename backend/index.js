@@ -2,7 +2,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 import { WebSocketServer } from "ws";
 import { StaticHandler } from './utils/static.js';
-import { handleWebsocket } from './utils/websocket.js';
+import { handleDisconnect, handleWebsocket } from './utils/websocket.js';
 
 dotenv.config();
 
@@ -15,8 +15,8 @@ function main() {
             handleWebsocket(JSON.parse(message), ws);
         })
 
-        ws.on("close", (ws) => {
-            //tell the room that the player left
+        ws.on("close", () => {
+            handleDisconnect(ws);
         });
     });
 

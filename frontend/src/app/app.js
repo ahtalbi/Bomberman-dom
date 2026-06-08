@@ -29,6 +29,7 @@ wss.addEventListener("message", (event) => {
                 roomId={message.roomId}
                 playersCount={message.playersCount}
                 secondsLeft={message.secondsLeft}
+                text={message.text}
             />,
             root
         );

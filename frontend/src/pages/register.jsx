@@ -5,7 +5,9 @@ function Register({ wss }) {
         e.preventDefault();
 
         const formData = new FormData(e.currentTarget);
-        const nickname = formData.get("nickname");
+        const nickname = formData.get("nickname").trim();
+
+        if (!nickname) return;
 
         wss.send(JSON.stringify({
             type: "nickname_of_the_player",
