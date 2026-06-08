@@ -3,12 +3,17 @@ import router from "../../mini-framework/mini-framework";
 import Register from "../pages/register";
 import Lobby from "../pages/lobby";
 import Game from "../pages/game";
+import Sound from "../utils/sound";
 
 const root = document.getElementById("root");
 const wss = new WebSocket("ws://localhost:5000");
+const sound = new Sound("./assets/sounds/background_music.mp3");
+
+sound.init();
 
 router.on("/", () => {
     console.log("/ we are in this route");
+    document.body.className = "register-page";
     
     render(<Register wss={wss} />, root);
 });
@@ -24,6 +29,7 @@ wss.addEventListener("message", (event) => {
     console.log("Received:", message);
 
     if (message.type === "room_update" || message.type === "lobby_timer") {
+        document.body.className = "lobby-page";
         render(
             <Lobby
                 roomId={message.roomId}
@@ -36,6 +42,7 @@ wss.addEventListener("message", (event) => {
     }
 
     if (message.type === "game_started") {
+        document.body.className = "game-page";
         render(
             <Game
                 roomId={message.roomId}

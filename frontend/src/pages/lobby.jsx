@@ -6,7 +6,7 @@ function Lobby({ roomId, playersCount, secondsLeft, text, gameStarted }) {
         : `${secondsLeft} seconds`;
 
     return (
-        <div>
+        <div class="lobby-box">
             <h1>Lobby</h1>
             <p>Room ID: {roomId}</p>
             <p>Players: {playersCount} / 4</p>

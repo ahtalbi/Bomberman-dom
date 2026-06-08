@@ -16,9 +16,9 @@ function Register({ wss }) {
     }
 
     return (
-        <form onSubmit={playerEnter}>
-            <input type="text" name="nickname" placeholder="eneter your name" />
-            <button type="submit">start playing</button>
+        <form class="register-form" onSubmit={playerEnter}>
+            <input class="nickname-input" type="text" name="nickname" placeholder="enter your name" />
+            <button class="register-button" type="submit">start playing</button>
         </form>
     )
 }
