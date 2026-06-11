@@ -17,6 +17,18 @@ export function handleWebsocket(message, ws) {
 
             roomsHandler.addPlayerToRoom(message.nickname, ws);
             break;
+        case "chat_message":
+            if (!message.message) {
+                sendError(ws, "Can't send empty message");
+                return;
+            }
+
+            if (message.message && message.length > 20) {
+                sendError(ws, "Can't send the message its too long");
+            }
+
+            roomsHandler.broadcastMessage(message.message, ws);
+            break;
     }
 }
 

@@ -1,4 +1,5 @@
 import { createElement } from "../../mini-framework/dom";
+import ChatPlayers from "../components/chat";
 
 function Lobby({ roomId, playersCount, secondsLeft, text, gameStarted }) {
     const timerText = secondsLeft === null || secondsLeft === undefined
@@ -12,6 +13,7 @@ function Lobby({ roomId, playersCount, secondsLeft, text, gameStarted }) {
             <p>Players: {playersCount} / 4</p>
             <p>{text}</p>
             <p>Timer: {gameStarted ? "Game started" : timerText}</p>
+            <ChatPlayers />
         </div>
     )
 }

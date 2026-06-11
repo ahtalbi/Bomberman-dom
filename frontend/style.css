@@ -187,3 +187,7 @@ body.lobby-page #root {
 .sound-button i {
     font-size: 20px;
 }
+
+.chat {
+    max-width: 400px;
+}

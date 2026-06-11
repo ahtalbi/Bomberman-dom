@@ -14,42 +14,34 @@ sound.init();
 router.on("/", () => {
     console.log("/ we are in this route");
     document.body.className = "register-page";
-    
+
     render(<Register wss={wss} />, root);
 });
 
-router.listen(() => {alert("404")});
+router.listen(() => { alert("404") });
 
 wss.addEventListener("open", (ws) => {
-    
+
 });
 
 wss.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
-    console.log("Received:", message);
-
-    if (message.type === "room_update" || message.type === "lobby_timer") {
-        document.body.className = "lobby-page";
-        render(
-            <Lobby
-                roomId={message.roomId}
-                playersCount={message.playersCount}
-                secondsLeft={message.secondsLeft}
-                text={message.text}
-            />,
-            root
-        );
-    }
-
-    if (message.type === "game_started") {
-        document.body.className = "game-page";
-        render(
-            <Game
-                roomId={message.roomId}
-                playersCount={message.playersCount}
-            />,
-            root
-        );
+    switch (message.type) {
+        case "room_update":
+        case "lobby_timer":
+            document.body.className = "lobby-page";
+            render(
+                <Lobby
+                    roomId={message.roomId}
+                    playersCount={message.playersCount}
+                    secondsLeft={message.secondsLeft}
+                    text={message.text}
+                />,
+                root
+            );
+            break;
+        case "chat_message":
+            console.log("message", message.message);
     }
 });
 

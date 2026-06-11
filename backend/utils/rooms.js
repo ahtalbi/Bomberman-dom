@@ -35,11 +35,24 @@ class RoomsHandler {
             break;
         }
     }
+
+    broadcastMessage(message, ws) {
+        for (let [_, room] of this.Rooms) {
+            console.log(room);
+            for (let player of room.players) {
+                if (player.ws === ws) {
+                    console.log(message);
+                    
+                    room.broadcastMessage(message);
+                }
+            }
+        }
+    }
 }
 
 const config = {
-    waitTime: 20,
-    startTime: 10,
+    waitTime: 10,
+    startTime: 3,
     waitingText: "Waiting for players",
     startingText: "Starting the game",
 };
@@ -114,6 +127,13 @@ class Room {
 
             this.broadcastLobbyTimer();
         }, 1000);
+    }
+
+    broadcastMessage(message) {
+        this.broadcast({
+            type: "chat_message",
+            message: message,
+        });
     }
 
     broadcastRoomUpdate() {
