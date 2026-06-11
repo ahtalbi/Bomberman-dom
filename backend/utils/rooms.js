@@ -38,11 +38,8 @@ class RoomsHandler {
 
     broadcastMessage(message, ws) {
         for (let [_, room] of this.Rooms) {
-            console.log(room);
             for (let player of room.players) {
                 if (player.ws === ws) {
-                    console.log(message);
-                    
                     room.broadcastMessage(message);
                 }
             }
@@ -92,6 +89,28 @@ class Room {
             clearInterval(this.timer);
             this.timer = null;
             return true;
+        }
+
+        if (this.inGame) {
+            clearInterval(this.timer);
+            this.timer = null;
+            this.inGame = false;
+            this.inLobby = false;
+
+            this.players[0].ws.send(JSON.stringify({
+                type: "room_alone",
+                winner: true,
+            }));
+
+            this.players = [];
+            return true;
+        }
+
+        if (this.players.length === 1 && this.inLobby) {
+            clearInterval(this.timer);
+            this.timer = null;
+            this.inLobby = false;
+            this.secondsLeft = config.waitTime;
         }
 
         this.broadcastRoomUpdate();

@@ -13,7 +13,11 @@ export function createSignal(initialValue) {
    }
 
    const Write = (newValue) => {
-      value = newValue;
+      if (typeof newValue === "function") {
+         let fn = newValue;
+         value = fn(value);
+      } 
+      else value = newValue;
       effects.forEach(effect => effect());
    }
 
