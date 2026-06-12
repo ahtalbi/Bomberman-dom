@@ -55,7 +55,21 @@ body.lobby-page::before {
 body.game-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: #18212f;
+    background: url("./assets/bg_game.png") center / cover no-repeat fixed;
+}
+
+body.game-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.62),
+        rgba(0, 0, 0, 0.32) 50%,
+        rgba(0, 0, 0, 0.12)
+    );
 }
 
 #root {
@@ -86,7 +100,8 @@ body.register-page #root {
     justify-content: center;
 }
 
-body.lobby-page #root {
+body.lobby-page #root,
+body.game-page #root {
     position: relative;
     z-index: 1;
     display: flex;
@@ -254,6 +269,98 @@ body.menu-page #root {
 
 .replay-button:hover {
     background: #ffd783;
+}
+
+/* game grid */
+.game-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.game-glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.score-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px 12px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.player-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffc457;
+}
+
+.score-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.score-icon {
+    font-size: 18px;
+}
+
+.score-label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-right: 2px;
+}
+
+.score-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    min-width: 16px;
+    text-align: center;
+}
+
+.game-grid {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.grid-row {
+    display: flex;
+}
+
+.tile {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.tile-floor {
+    background-image: url("./assets/blocks/block_floor.jpg");
+}
+
+.tile-wall {
+    background-color: #2a2a2a;
 }
 
 /* chat */

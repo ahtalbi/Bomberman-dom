@@ -43,7 +43,7 @@ wss.addEventListener("message", (event) => {
             break;
         case "game_started":
             document.body.className = "game-page";
-            render(<Game roomId={message.roomId} playersCount={message.playersCount} />, root);
+            render(<Game grid={message.grid} />, root);
             break;
         case "room_alone":
             document.body.className = "menu-page";

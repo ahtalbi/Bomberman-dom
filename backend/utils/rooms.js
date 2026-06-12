@@ -1,5 +1,6 @@
 import { generateRandomDigits } from "./helpers.js";
 import Player from "./player.js";
+import GameMap from "./map.js";
 
 class RoomsHandler {
     constructor() {
@@ -136,10 +137,13 @@ class Room {
                 this.timer = null;
                 this.inLobby = false;
 
+                const gameMap = new GameMap();
+
                 this.broadcast({
                     type: "game_started",
                     roomId: this.id,
                     playersCount: this.players.length,
+                    grid: gameMap.map,
                 });
                 return;
             }
