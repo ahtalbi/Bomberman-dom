@@ -9,11 +9,16 @@ const images = {
     4: "./assets/blocks/block_exploit.png",
 };
 
+const [playerName, setPlayerName] = createSignal("Player 1");
 const [lives, setLives] = createSignal(3);
 const [speed, setSpeed] = createSignal(1);
 const [bombs, setBombs] = createSignal(1);
 const [range, setRange] = createSignal(1);
-export { setLives, setSpeed, setBombs, setRange };
+export { setPlayerName, setLives, setSpeed, setBombs, setRange };
+
+const nameEl = <span class="player-name"></span>;
+
+createEffect(() => { nameEl.textContent = playerName(); });
 
 const livesEl = <span class="score-value lives-value"></span>;
 const speedEl = <span class="score-value speed-value"></span>;
@@ -57,7 +62,7 @@ function Game({ grid }) {
         <div class="game-container">
             <div class="game-glass">
                 <div class="score-bar">
-                    <span class="player-name">Player 1</span>
+                    {nameEl}
                     <div class="score-stats">
                         <div class="score-item">
                             <span class="score-icon">❤️</span>
