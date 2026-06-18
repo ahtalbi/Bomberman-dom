@@ -14,6 +14,16 @@ class RoomsHandler {
     }
 
     addPlayerToRoom(nickname, ws) {
+        const existingRoom = this.getRoomBySocket(ws);
+        if (existingRoom) {
+            const existingPlayer = existingRoom.players.find(player => player.ws === ws);
+            if (existingPlayer) {
+                existingPlayer.nickname = nickname;
+            }
+            existingRoom.broadcastRoomUpdate();
+            return;
+        }
+
         const lastKey = [...this.Rooms.keys()].at(-1);
         const lastRoom = this.Rooms.get(lastKey);
         const player = new Player(nickname, ws);
@@ -24,6 +34,15 @@ class RoomsHandler {
             this.addRoom();
             this.Rooms.get([...this.Rooms.keys()].at(-1)).addPlayer(player);
         }
+    }
+
+    getRoomBySocket(ws) {
+        for (const [_, room] of this.Rooms) {
+            if (room.players.some(player => player.ws === ws)) {
+                return room;
+            }
+        }
+        return null;
     }
 
     removePlayer(ws) {
@@ -49,8 +68,15 @@ class RoomsHandler {
 
     broadcastGameMessage(ws, message) {
         for (let [_, room] of this.Rooms) {
-            if (room.players.some(player => player.ws === ws)) {
-                room.broadcast(message);
+            const sender = room.players.find(player => player.ws === ws);
+            if (sender) {
+                room.broadcast({
+                    ...message,
+                    payload: {
+                        ...message.payload,
+                        id: sender.id,
+                    },
+                });
                 return;
             }
         }

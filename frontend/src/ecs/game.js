@@ -33,10 +33,14 @@ export class GameEngine {
         this.removeInputListeners = null;
         this.animationFrame = null;
         this.running = false;
+        this.claimedPowerUps = new Set();
     }
 
     init(localPlayerId, allPlayers) {
+        const normalizedLocalPlayerId = String(localPlayerId);
+
         allPlayers.forEach(pData => {
+            const playerId = String(pData.id);
             const playerEntity = this.world.createEntity();
             const playerDiv = document.createElement('div');
             const color = pData.color || "white";
@@ -55,13 +59,13 @@ export class GameEngine {
             this.world.addComponent(playerEntity, 'Renderable', RenderableComponent(playerDiv, 64, 64, 4, 12)
             );
 
-            const isLocal = pData.id === localPlayerId;
-            const playerComp = PlayerComponent(pData.id, color, isLocal);
+            const isLocal = playerId === normalizedLocalPlayerId;
+            const playerComp = PlayerComponent(playerId, color, isLocal);
             playerComp.lives = 3;
             playerComp.maxBombs = 1;
             playerComp.bombRange = 4;
             this.world.addComponent(playerEntity, 'Player', playerComp);
-            this.playerEntities.set(pData.id, playerEntity);
+            this.playerEntities.set(playerId, playerEntity);
 
             if (isLocal) {
                 this.localPlayerEntity = playerEntity;
@@ -70,6 +74,13 @@ export class GameEngine {
                 this.setupInput();
             }
         });
+
+        if (this.localPlayerEntity === null) {
+            console.warn("[GameEngine] Local player was not found", {
+                localPlayerId,
+                players: allPlayers.map(player => player.id),
+            });
+        }
 
         this.registerSystems();
 
@@ -122,7 +133,7 @@ export class GameEngine {
     }
 
     dropBomb() {
-        if (!this.localPlayerEntity) return;
+        if (this.localPlayerEntity === null) return;
 
         const pos = this.world.getComponent(this.localPlayerEntity, 'Position');
         const player = this.world.getComponent(this.localPlayerEntity, 'Player');
@@ -176,8 +187,8 @@ export class GameEngine {
             return;
         }
 
-        let entity = this.playerEntities.get(payload.id);
-        if (!entity) {
+        let entity = this.playerEntities.get(String(payload.id));
+        if (entity === undefined) {
             console.warn(`[handleRemoteMove] Entity not found for player ${payload.id}. Available players:`, Array.from(this.playerEntities.keys()));
             return;
         }
@@ -211,6 +222,53 @@ export class GameEngine {
         this.createBomb(payload.id, payload.x, payload.y, payload.range || 4);
     }
 
+    handleRemotePowerUpPicked(payload) {
+        if (!payload || payload.x === undefined || payload.y === undefined) return;
+
+        this.removePowerUpAt(payload.x, payload.y);
+
+        const entity = this.playerEntities.get(String(payload.id));
+        if (entity === undefined || entity === this.localPlayerEntity) return;
+
+        this.applyPowerUp(entity, payload.type);
+    }
+
+    removePowerUpAt(gridX, gridY) {
+        this.claimedPowerUps.add(`${gridX},${gridY}`);
+        const powerUps = this.world.query('Position', 'PowerUp');
+
+        for (const entity of powerUps) {
+            const pos = this.world.getComponent(entity, 'Position');
+            const powerUp = this.world.getComponent(entity, 'PowerUp');
+            if (!pos || !powerUp) continue;
+
+            if (pos.gridX === gridX && pos.gridY === gridY) {
+                powerUp.pickedUp = true;
+
+                if (powerUp.el && powerUp.el.parentNode) {
+                    powerUp.el.parentNode.removeChild(powerUp.el);
+                }
+
+                this.world.destroyEntity(entity);
+                return;
+            }
+        }
+    }
+
+    applyPowerUp(entity, type) {
+        const player = this.world.getComponent(entity, 'Player');
+        const velocity = this.world.getComponent(entity, 'Velocity');
+        if (!player || !velocity) return;
+
+        if (type === 'SPEED') {
+            velocity.speed = Math.min(velocity.speed + 1, 8);
+        } else if (type === 'BOMBS') {
+            player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
+        } else if (type === 'FLAME') {
+            player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
+        }
+    }
+
     registerSystems() {
         const updateMapCell = (x, y, newValue) => {
             if (!this.mapData[y]) return;
@@ -225,6 +283,7 @@ export class GameEngine {
         };
 
         const destroyBoxCallback = (x, y) => {
+            if (this.claimedPowerUps.has(`${x},${y}`)) return;
             spawnPowerUp(this.world, x, y, this.container, TILE_SIZE);
         };
 
@@ -234,12 +293,21 @@ export class GameEngine {
             }
         };
 
-        const onPowerUpPicked = (id, type) => {
-            if (!this.localPlayerEntity) return;
+        const onPowerUpPicked = (id, type, x, y) => {
+            this.claimedPowerUps.add(`${x},${y}`);
+
+            if (this.localPlayerEntity === null) return;
 
             const player = this.world.getComponent(this.localPlayerEntity, 'Player');
             if (player && player.id === id) {
                 this.updateHudStats(this.localPlayerEntity);
+            }
+
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({
+                    type: 'POWERUP_PICKED',
+                    payload: { id, type, x, y }
+                }));
             }
         };
 

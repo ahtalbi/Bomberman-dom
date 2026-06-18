@@ -41,6 +41,12 @@ export function handleWebsocket(message, ws) {
                 payload: message.payload,
             });
             break;
+        case "POWERUP_PICKED":
+            roomsHandler.broadcastGameMessage(ws, {
+                type: "powerup_picked",
+                payload: message.payload,
+            });
+            break;
     }
 }
 

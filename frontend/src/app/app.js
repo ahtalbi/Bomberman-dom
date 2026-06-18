@@ -91,6 +91,11 @@ wss.addEventListener("message", (event) => {
                 currentGameEngine.handleRemoteBomb(message.payload);
             }
             break;
+        case "powerup_picked":
+            if (currentGameEngine) {
+                currentGameEngine.handleRemotePowerUpPicked(message.payload);
+            }
+            break;
     }
 });
 

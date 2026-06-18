@@ -639,10 +639,10 @@ body.menu-page #root {
     transition: none; 
 }
 
-.player-white { background-image: url('./assets/player_white.png'); }
+.player-white { background-image: url('./assets/player_yellow.png'); }
 .player-red   { background-image: url('./assets/player_red.png'); }
 .player-blue  { background-image: url('./assets/player_blue.png'); }
-.player-black { background-image: url('./assets/player_black.png'); }
+.player-black { background-image: url('./assets/player_green.png'); }
 
 .bomb {
     position: absolute;

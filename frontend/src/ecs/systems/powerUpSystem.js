@@ -6,12 +6,14 @@ export function powerUpSystem(world, onPowerUpPicked) {
         const pPos = world.getComponent(playerEntity, 'Position');
         const vel = world.getComponent(playerEntity, 'Velocity');
         const player = world.getComponent(playerEntity, 'Player');
+        if (!pPos || !vel || !player) continue;
 
         for (const pUpEntity of powerUps) {
             const upPos = world.getComponent(pUpEntity, 'Position');
             const pUp = world.getComponent(pUpEntity, 'PowerUp');
+            if (!upPos || !pUp || pUp.pickedUp) continue;
 
-            if (pPos.gridX === upPos.gridX && pPos.gridY === upPos.gridY && !pUp.pickedUp) {
+            if (pPos.gridX === upPos.gridX && pPos.gridY === upPos.gridY) {
                 pUp.pickedUp = true;
 
                 if (pUp.type === 'SPEED') {
@@ -29,7 +31,7 @@ export function powerUpSystem(world, onPowerUpPicked) {
                 }
 
                 if (onPowerUpPicked) {
-                    onPowerUpPicked(player.id, pUp.type);
+                    onPowerUpPicked(player.id, pUp.type, upPos.gridX, upPos.gridY);
                 }
 
                 world.destroyEntity(pUpEntity);
