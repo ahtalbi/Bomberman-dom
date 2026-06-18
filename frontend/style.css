@@ -8,14 +8,17 @@ body {
     margin: 0;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    color: white;
-}
+body { 
+  font-family: Arial, Helvetica, sans-serif; 
+  color: white; 
+} 
 
-body.register-page {
-    min-height: 100vh;
-    background: url("./assets/bg_register.png") center / cover no-repeat fixed;
+body.register-page { 
+    height: 100vh; 
+    height: 100dvh; 
+    overflow: hidden;
+    margin: 0;
+    background: #121118 url("./assets/bg_register.jpg") center / cover no-repeat fixed; 
 }
 
 body.register-page::before {
@@ -35,7 +38,7 @@ body.register-page::before {
 body.lobby-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: url("./assets/bg_lobby.png") center / cover no-repeat fixed;
+    background: url("./assets/bg_lobby.jpg") center / cover no-repeat fixed;
 }
 
 body.lobby-page::before {
@@ -55,7 +58,7 @@ body.lobby-page::before {
 body.game-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: url("./assets/bg_game.png") center / cover no-repeat fixed;
+    background: url("./assets/bg_game.jpg") center / cover no-repeat fixed;
 }
 
 body.game-page::before {
@@ -83,12 +86,12 @@ body.game-page::before {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    background: rgba(255, 255, 255, 0.17);
-    border-radius: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: #1c1726; 
+    border: 4px solid #000000;
+    box-shadow: 
+        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
+        inset -4px -4px 0 0 #100d17,
+        inset 4px 4px 0 0 #3a314c;
     transform: translateY(70px);
 }
 
@@ -121,12 +124,12 @@ body.game-page #root {
 .lobby-box {
     padding: 30px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.17);
-    border-radius: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: #1c1726;
+    border: 4px solid #000000;
+    box-shadow: 
+        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
+        inset -4px -4px 0 0 #100d17,
+        inset 4px 4px 0 0 #3a314c;
 }
 
 .game-box {
@@ -139,47 +142,71 @@ body.game-page #root {
 .lobby-box p,
 .game-box p {
     margin: 0;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .lobby-box h1,
 .game-box h1 {
-    font-size: 42px;
+    font-size: 36px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ffc457;
+    text-shadow: 3px 3px 0px #000;
 }
 
 .lobby-box p,
 .game-box p {
-    font-size: 18px;
+    font-size: 16px;
+    color: #ffffff;
 }
 
 .nickname-input,
 .register-button {
     width: 100%;
     min-height: 48px;
-    border: 0;
-    border-radius: 8px;
     font-size: 16px;
+    font-family: 'Courier New', Courier, monospace; 
+    text-transform: uppercase;
+    box-sizing: border-box;
+    border: 4px solid #000000;
 }
 
 .nickname-input {
     padding: 0 16px;
-    color: #1f2430;
-    background: rgba(255, 255, 255, 0.9);
+    color: #ffffff;
+    background: #2a2435;
     outline: none;
+    box-shadow: 
+        inset -4px -4px 0px 0px #413852,
+        inset 4px 4px 0px 0px #000000;
 }
 
 .nickname-input:focus {
-    box-shadow: 0 0 0 3px rgba(255, 196, 87, 0.75);
+    background: #352e42;
+    border-color: #ffc457;
 }
 
 .register-button {
-    color: #231707;
+    color: #000000;
     background: #ffc457;
-    font-weight: 700;
+    font-weight: 900;
     cursor: pointer;
+    box-shadow: 
+        inset -4px -4px 0px 0px #b78119,
+        inset 4px 4px 0px 0px #ffe19e;
 }
 
 .register-button:hover {
     background: #ffd783;
+    box-shadow: 
+        inset -4px -4px 0px 0px #cc962d,
+        inset 4px 4px 0px 0px #ffffff;
+}
+
+.register-button:active {
+    box-shadow: 
+        inset 4px 4px 0px 0px #b78119,
+        inset -4px -4px 0px 0px #ffe19e;
 }
 
 .sound-button {
@@ -189,25 +216,44 @@ body.game-page #root {
     z-index: 10;
     width: 48px;
     height: 48px;
-    border: 0;
-    border-radius: 50%;
     display: grid;
     place-items: center;
-    color: #241605;
+    color: #000000;
     background: #ffc457;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    border: 4px solid #000000;
+    box-shadow: 
+        -4px 4px 0px 0px rgba(0, 0, 0, 0.4),
+        inset -4px -4px 0px 0px #b78119,
+        inset 4px 4px 0px 0px #ffe19e;
 }
 
 .sound-button i {
     font-size: 20px;
 }
 
+.sound-button:hover {
+    background: #ffd783;
+    box-shadow: 
+        -4px 4px 0px 0px rgba(0, 0, 0, 0.4),
+        inset -4px -4px 0px 0px #cc962d,
+        inset 4px 4px 0px 0px #ffffff;
+}
+
+.sound-button:active {
+    /* Push button inward effect */
+    transform: translate(-2px, 2px); 
+    box-shadow: 
+        -2px 2px 0px 0px rgba(0, 0, 0, 0.4),
+        inset 4px 4px 0px 0px #b78119,
+        inset -4px -4px 0px 0px #ffe19e;
+}
+
 /* menu page */
 body.menu-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: url("./assets/bg_lobby.png") center / cover no-repeat fixed;
+    background: url("./assets/bg_lobby.jpg") center / cover no-repeat fixed;
 }
 
 body.menu-page::before {
@@ -237,38 +283,61 @@ body.menu-page #root {
     margin: 0 auto;
     padding: 30px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.17);
-    border-radius: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: #1c1726;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
+        inset -4px -4px 0 0 #100d17,
+        inset 4px 4px 0 0 #3a314c;
 }
 
 .menu-box h1 {
-    font-size: 42px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 36px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ffc457;
     margin: 0 0 10px 0;
+    text-shadow: 3px 3px 0px #000;
 }
 
 .menu-box p {
-    font-size: 18px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    color: #ffffff;
     margin: 0 0 20px 0;
+    text-transform: uppercase;
 }
 
 .replay-button {
     min-height: 48px;
     padding: 0 24px;
-    border: 0;
-    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 16px;
-    font-weight: 700;
-    color: #231707;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000000;
     background: #ffc457;
     cursor: pointer;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        inset -4px -4px 0px 0px #b78119,
+        inset 4px 4px 0px 0px #ffe19e;
 }
 
 .replay-button:hover {
     background: #ffd783;
+    box-shadow: 
+        inset -4px -4px 0px 0px #cc962d,
+        inset 4px 4px 0px 0px #ffffff;
+}
+
+.replay-button:active {
+    box-shadow: 
+        inset 4px 4px 0px 0px #b78119,
+        inset -4px -4px 0px 0px #ffe19e;
 }
 
 /* game grid */
@@ -280,17 +349,24 @@ body.menu-page #root {
 }
 
 .game-glass {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 20px;
+    background: #1c1726;
     padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
+    
+    /* Enforces dynamic vertical scaling limits */
+    width: min(100%, 600px); 
+    max-height: 90vh; 
+    box-sizing: border-box;
+
+    /* Pixel Frame */
+    border: 4px solid #000000;
+    box-shadow: 
+        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
+        inset -4px -4px 0 0 #100d17,
+        inset 4px 4px 0 0 #3a314c;
 }
 
 .score-bar {
@@ -299,13 +375,17 @@ body.menu-page #root {
     align-items: center;
     justify-content: space-between;
     padding: 0 8px 12px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    box-sizing: border-box;
+    border-bottom: 4px solid #000000;
 }
 
 .player-name {
+    font-family: 'Courier New', Courier, monospace;
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 900;
+    text-transform: uppercase;
     color: #ffc457;
+    text-shadow: 2px 2px 0px #000;
 }
 
 .score-stats {
@@ -316,7 +396,7 @@ body.menu-page #root {
 .score-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .score-icon {
@@ -324,30 +404,78 @@ body.menu-page #root {
 }
 
 .score-label {
+    font-family: 'Courier New', Courier, monospace;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #a39bb0;
     margin-right: 2px;
 }
 
 .score-value {
+    font-family: 'Courier New', Courier, monospace;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 900;
     color: #fff;
     min-width: 16px;
     text-align: center;
+    text-shadow: 2px 2px 0px #000;
 }
 
 .game-grid {
     display: flex;
     flex-direction: column;
-    border: 0;
-    outline: 2px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
     overflow: hidden;
+    flex: 1;
+    width: 100%;
+    max-height: 60vh; 
+    aspect-ratio: 1 / 1;
+    border: 6px solid #000000;
+    outline: none;
+    box-shadow: 
+        inset -4px -4px 0px 0px #15111d,
+        inset 4px 4px 0px 0px #413852;
 }
 
 .grid-row {
     display: flex;
+}
+
+/* --- RETRO ARCADE SCROLLBARS --- */
+
+/* For Chrome, Safari, Edge, and Opera */
+::-webkit-scrollbar {
+    width: 12px;  /* Blocky, thick layout width */
+    height: 12px; /* For horizontal scrollbars */
+}
+
+/* The track background behind the scrollbar handle */
+::-webkit-scrollbar-track {
+    background: #0d0a12; /* Deep CRT monitor black/dark purple */
+    border-left: 4px solid #000000; /* Sharp border separation */
+}
+
+/* The draggable scroll handle block */
+::-webkit-scrollbar-thumb {
+    background: #ffc457; /* Signature arcade gold */
+    border: 4px solid #000000; /* Creates the blocky pixel outline look */
+}
+
+/* Handle hover state */
+::-webkit-scrollbar-thumb:hover {
+    background: #ffd783; /* Lighter gold highlight on hover */
+}
+
+/* The corner space where vertical and horizontal scrollbars meet */
+::-webkit-scrollbar-corner {
+    background: #000000;
+}
+
+
+/* For Firefox support */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: #ffc457 #0d0a12;
 }
 
 .tile {
@@ -370,11 +498,9 @@ body.menu-page #root {
     max-width: 400px;
     margin-top: 20px;
     padding: 16px;
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #15111d;
+    box-sizing: border-box;
+    border: 4px solid #000000;
 }
 
 .messages {
@@ -383,24 +509,37 @@ body.menu-page #root {
     overflow-y: auto;
     padding: 8px 12px;
     margin-bottom: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    background: #0d0a12;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    border: 4px solid #000000;
 }
 
 .messages p {
     margin: 0;
     padding: 6px 10px;
-    font-size: 14px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: #1c1726;
+    border: 2px solid #2d253d;
     word-break: break-word;
 }
 
 .messages p:first-child {
     margin-top: auto;
+}
+
+.messages::-webkit-scrollbar {
+    width: 8px;
+}
+.messages::-webkit-scrollbar-track {
+    background: #0d0a12;
+}
+.messages::-webkit-scrollbar-thumb {
+    background: #ffc457;
+    border: 2px solid #000;
 }
 
 .chat form {
@@ -412,34 +551,52 @@ body.menu-page #root {
     flex: 1;
     min-height: 36px;
     padding: 0 12px;
-    border: 0;
-    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
-    color: #1f2430;
-    background: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
+    background: #2a2435;
     outline: none;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        inset -2px -2px 0px 0px #413852,
+        inset 2px 2px 0px 0px #000000;
 }
 
 .chat input[type="text"]:focus {
-    box-shadow: 0 0 0 2px rgba(255, 196, 87, 0.75);
+    background: #352e42;
+    border-color: #ffc457;
 }
 
 .chat button[type="submit"] {
     min-height: 36px;
     padding: 0 16px;
-    border: 0;
-    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
-    font-weight: 700;
-    color: #231707;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000000;
     background: #ffc457;
     cursor: pointer;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        inset -2px -2px 0px 0px #b78119,
+        inset 2px 2px 0px 0px #ffe19e;
 }
 
 .chat button[type="submit"]:hover {
     background: #ffd783;
+    box-shadow: 
+        inset -2px -2px 0px 0px #cc962d,
+        inset 2px 2px 0px 0px #ffffff;
 }
 
+.chat button[type="submit"]:active {
+    box-shadow: 
+        inset 2px 2px 0px 0px #b78119,
+        inset -2px -2px 0px 0px #ffe19e;
+}
 
 .tile {
     box-sizing: border-box;
