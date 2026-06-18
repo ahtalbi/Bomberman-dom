@@ -340,7 +340,8 @@ body.menu-page #root {
 .game-grid {
     display: flex;
     flex-direction: column;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 0;
+    outline: 2px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -437,4 +438,81 @@ body.menu-page #root {
 
 .chat button[type="submit"]:hover {
     background: #ffd783;
+}
+
+
+.tile {
+    box-sizing: border-box;
+}
+.tile-wall {
+    background-image: url("./assets/blocks/block_wall.png");
+    background-size: cover;
+    image-rendering: pixelated;
+}
+.tile-box {
+    background-image: url("./assets/blocks/block_exploit.png");
+    background-size: cover;
+    image-rendering: pixelated;
+}
+.tile-ground {
+    background-color: #333;
+    border: 1px solid #292929;
+}
+
+.player {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    z-index: 10;
+    background-repeat: no-repeat;
+    background-size: 832px 3456px;
+    image-rendering: pixelated; 
+    transition: none; 
+}
+
+.player-white { background-image: url('./assets/player_white.png'); }
+.player-red   { background-image: url('./assets/player_red.png'); }
+.player-blue  { background-image: url('./assets/player_blue.png'); }
+.player-black { background-image: url('./assets/player_black.png'); }
+
+.bomb {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    z-index: 6;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #93c5fd;
+    box-shadow: inset -6px -7px 0 rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.explosion {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    z-index: 7;
+    background: rgba(255, 196, 87, 0.92);
+    box-shadow: inset 0 0 0 6px rgba(255, 80, 42, 0.8);
+    image-rendering: pixelated;
+}
+
+.powerup {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    z-index: 5;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
+    animation: floatAnimation 1.5s ease-in-out infinite alternate;
+}
+
+.powerup-speed { background: #5eead4; }
+.powerup-bombs { background: #f87171; }
+.powerup-flame { background: #fbbf24; }
+
+@keyframes floatAnimation {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-6px); }
 }
