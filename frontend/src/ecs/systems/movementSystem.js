@@ -72,9 +72,6 @@ export function movementSystem(world, dt, now, mapData, tileSize = 40) {
             continue;
         }
 
-        const prevX = pos.x;
-        const prevY = pos.y;
-
         const nextX = pos.x + dx * vel.speed * delta;
         const nextY = pos.y + dy * vel.speed * delta;
 
@@ -117,11 +114,11 @@ export function movementSystem(world, dt, now, mapData, tileSize = 40) {
             pos.y = nextYAfterSnap;
         }
 
-        vel.isMoving = pos.x !== prevX || pos.y !== prevY;
+        vel.isMoving = true;
 
         const renderable = world.getComponent(entity, 'Renderable');
         if (renderable) {
-            renderable.state = vel.isMoving ? 'RUN' : 'IDLE';
+            renderable.state = 'RUN';
         }
 
         pos.gridX = Math.floor(

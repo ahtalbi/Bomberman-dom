@@ -8,7 +8,7 @@ replayBtn.addEventListener("click", () => {
 
 let menuEl = (
     <div class="menu-box">
-        <h1>🎉 You Win!</h1>
+        <h1>You Win!</h1>
         <p>All other players have left the game.</p>
         {replayBtn}
     </div>

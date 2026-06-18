@@ -2,6 +2,9 @@ import { createElement } from "../../mini-framework/dom";
 import { createSignal, createEffect } from "../../mini-framework/reactivity";
 
 const TILE_SIZE = 64;
+const GRID_BORDER_SIZE = 6;
+const GAME_CHROME_WIDTH = 72;
+const GAME_CHROME_HEIGHT = 150;
 
 const images = {
     2: "./assets/blocks/block_floor.jpg",
@@ -31,6 +34,17 @@ createEffect(() => { bombsEl.textContent = bombs(); });
 createEffect(() => { rangeEl.textContent = range(); });
 
 function Game({ grid }) {
+    const boardWidth = grid[0].length * TILE_SIZE;
+    const boardHeight = grid.length * TILE_SIZE;
+    const boardOuterWidth = boardWidth + GRID_BORDER_SIZE * 2;
+    const boardOuterHeight = boardHeight + GRID_BORDER_SIZE * 2;
+    const viewportWidth = typeof window === "undefined" ? boardWidth : window.innerWidth;
+    const viewportHeight = typeof window === "undefined" ? boardHeight : window.innerHeight;
+    const scale = Math.min(
+        1,
+        Math.max(0.2, (viewportWidth - GAME_CHROME_WIDTH) / boardOuterWidth),
+        Math.max(0.2, (viewportHeight - GAME_CHROME_HEIGHT) / boardOuterHeight)
+    );
     const rows = [];
     for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
         const cells = [];
@@ -65,29 +79,31 @@ function Game({ grid }) {
                     {nameEl}
                     <div class="score-stats">
                         <div class="score-item">
-                            <span class="score-icon">❤️</span>
+                            <span class="score-icon">Lives</span>
                             {livesEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">⚡</span>
+                            <span class="score-icon">Speed</span>
                             {speedEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">💣</span>
+                            <span class="score-icon">Bombs</span>
                             {bombsEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">🎯</span>
+                            <span class="score-icon">Range</span>
                             {rangeEl}
                         </div>
                     </div>
                 </div>
-                <div
-                    id="game-container"
-                    class="game-grid"
-                    style={`position:relative;width:${grid[0].length * TILE_SIZE}px;height:${grid.length * TILE_SIZE}px;`}
-                >
-                    {rows}
+                <div class="game-board-frame" style={`width:${boardOuterWidth * scale}px;height:${boardOuterHeight * scale}px;`}>
+                    <div
+                        id="game-container"
+                        class="game-grid"
+                        style={`position:relative;width:${boardWidth}px;height:${boardHeight}px;transform:scale(${scale});`}
+                    >
+                        {rows}
+                    </div>
                 </div>
             </div>
         </div>
