@@ -46,6 +46,15 @@ class RoomsHandler {
             }
         }
     }
+
+    broadcastGameMessage(ws, message) {
+        for (let [_, room] of this.Rooms) {
+            if (room.players.some(player => player.ws === ws)) {
+                room.broadcast(message);
+                return;
+            }
+        }
+    }
 }
 
 const config = {
@@ -53,6 +62,13 @@ const config = {
     startTime: 3,
     waitingText: "Waiting for players",
     startingText: "Starting the game",
+    colors: ["white", "red", "blue", "black"],
+    starts: [
+        { x: 1, y: 1 },
+        { x: 15, y: 15 },
+        { x: 15, y: 1 },
+        { x: 1, y: 15 },
+    ],
 };
 
 class Room {
@@ -139,11 +155,23 @@ class Room {
 
                 const gameMap = new GameMap();
 
-                this.broadcast({
-                    type: "game_started",
-                    roomId: this.id,
-                    playersCount: this.players.length,
-                    grid: gameMap.map,
+                const players = this.players.map((player, index) => ({
+                    id: player.id,
+                    nickname: player.nickname,
+                    color: config.colors[index],
+                    x: config.starts[index].x,
+                    y: config.starts[index].y,
+                }));
+
+                this.players.forEach(player => {
+                    player.ws.send(JSON.stringify({
+                        type: "game_started",
+                        roomId: this.id,
+                        playersCount: this.players.length,
+                        grid: gameMap.map,
+                        players,
+                        yourPlayerId: player.id,
+                    }));
                 });
                 return;
             }
@@ -179,8 +207,9 @@ class Room {
         });
     }
 
-    broadcast(message) {
+    broadcast(message, exceptWs = null) {
         this.players.forEach(player => {
+            if (player.ws === exceptWs) return;
             player.ws.send(JSON.stringify(message));
         });
     }
