@@ -56,7 +56,9 @@ body.lobby-page::before {
 }
 
 body.game-page {
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     color: #f8fafc;
     background: url("./assets/bg_game.jpg") center / cover no-repeat fixed;
 }
@@ -110,6 +112,12 @@ body.game-page #root {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+body.game-page #root {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
 }
 
 .lobby-box,
@@ -345,7 +353,12 @@ body.menu-page #root {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    padding: 12px;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .game-glass {
@@ -355,13 +368,7 @@ body.menu-page #root {
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    
-    /* Enforces dynamic vertical scaling limits */
-    width: min(100%, 600px); 
-    max-height: 90vh; 
     box-sizing: border-box;
-
-    /* Pixel Frame */
     border: 4px solid #000000;
     box-shadow: 
         -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
@@ -377,6 +384,13 @@ body.menu-page #root {
     padding: 0 8px 12px 8px;
     box-sizing: border-box;
     border-bottom: 4px solid #000000;
+}
+
+.game-board-frame {
+    flex: 0 0 auto;
+    overflow: hidden;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .player-name {
@@ -426,10 +440,8 @@ body.menu-page #root {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    flex: 1;
-    width: 100%;
-    max-height: 60vh; 
-    aspect-ratio: 1 / 1;
+    box-sizing: content-box;
+    transform-origin: top left;
     border: 6px solid #000000;
     outline: none;
     box-shadow: 
