@@ -1,6 +1,5 @@
 import { createElement } from "../../mini-framework/dom";
-import { setPlayerName } from "./game";
-
+import { setPlayerName } from "../ecs/game.js";
 function Register({ wss }) {
     let playerEnter = (e) => {
         e.preventDefault();

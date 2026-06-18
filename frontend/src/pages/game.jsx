@@ -1,7 +1,7 @@
 import { createElement } from "../../mini-framework/dom";
 import { createSignal, createEffect } from "../../mini-framework/reactivity";
 
-const TILE_SIZE = 40;
+const TILE_SIZE = 64;
 
 const images = {
     2: "./assets/blocks/block_floor.jpg",
@@ -53,7 +53,7 @@ function Game({ grid }) {
                 style += `background-image:url(${images[2]})`;
             }
 
-            cells.push(<div class={className} style={style}></div>);
+            cells.push(<div class={className} data-x={colIndex} data-y={rowIndex} style={style}></div>);
         }
         rows.push(<div class="grid-row">{cells}</div>);
     }
@@ -82,7 +82,13 @@ function Game({ grid }) {
                         </div>
                     </div>
                 </div>
-                <div class="game-grid">{rows}</div>
+                <div
+                    id="game-container"
+                    class="game-grid"
+                    style={`position:relative;width:${grid[0].length * TILE_SIZE}px;height:${grid.length * TILE_SIZE}px;`}
+                >
+                    {rows}
+                </div>
             </div>
         </div>
     );
