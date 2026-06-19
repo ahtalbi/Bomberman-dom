@@ -141,7 +141,7 @@ class Room {
             this.deadPlayers.add(disconnectedPlayerId);
             
             const alivePlayers = this.players.filter(p => !this.deadPlayers.has(p.id));
-            if (this.initialPlayerCount > 1 && (this.initialPlayerCount - this.deadPlayers.size) === 1) {
+            if (this.initialPlayerCount > 1 && alivePlayers.length === 1 && this.players.length > 0) {
                 const winner = alivePlayers[0];
                 this.broadcast({ // Should broadcast to everyone including the disconnected player if they were still connected
                     type: "game_won",

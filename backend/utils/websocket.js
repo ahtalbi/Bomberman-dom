@@ -64,7 +64,7 @@ export function handleWebsocket(message, ws) {
 
                     const alivePlayers = room.players.filter(p => !room.deadPlayers.has(p.id));
 
-                    if (room.initialPlayerCount > 1 && (room.initialPlayerCount - room.deadPlayers.size) === 1) {
+                    if (room.initialPlayerCount > 1 && alivePlayers.length === 1) {
                         const winner = alivePlayers[0];
                         console.log(`[Game Event] Winner found: ${winner.nickname}. Broadcasting 'game_won'.`);
                         room.broadcast({
