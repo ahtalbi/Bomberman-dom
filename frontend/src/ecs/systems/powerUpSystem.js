@@ -1,4 +1,4 @@
-export function powerUpSystem(world, onPowerUpPicked, onHeartPickedUp) {
+export function powerUpSystem(world, onPowerUpPicked) {
     const players = world.query('Position', 'Velocity', 'Player');
     const powerUps = world.query('Position', 'PowerUp');
 
@@ -13,9 +13,11 @@ export function powerUpSystem(world, onPowerUpPicked, onHeartPickedUp) {
             const pUp = world.getComponent(pUpEntity, 'PowerUp');
             if (!upPos || !pUp || pUp.pickedUp) continue;
 
+            // Grid-based collision: player grid position matches power-up grid position
             if (pPos.gridX === upPos.gridX && pPos.gridY === upPos.gridY) {
                 pUp.pickedUp = true;
 
+                // Handle different power-up types
                 if (pUp.type === 'SPEED') {
                     vel.speed = Math.min(vel.speed + 1, 8);
                 }
@@ -26,23 +28,31 @@ export function powerUpSystem(world, onPowerUpPicked, onHeartPickedUp) {
                     player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
                 }
                 else if (pUp.type === 'HEART') {
-                    // Heart power-up: increment player's lives by 1 (cap at 3)
-                    player.lives = Math.min((player.lives || 0) + 1, 3);
-                    // CRITICAL: Call the heart-specific callback immediately to update HUD
-                    if (onHeartPickedUp) {
-                        onHeartPickedUp(playerEntity, player.id, player.lives, upPos.gridX, upPos.gridY);
-                    }
+                    // ========== CRITICAL HEART PICKUP LOGIC ==========
+                    // Step 1: Get current lives from THIS player (not from heart entity!)
+                    const currentLives = player.lives || 0;
+
+                    // Step 2: Forcefully increment by 1 (simple addition, no other logic)
+                    const newLives = currentLives + 1;
+                    player.lives = newLives;
+
+                    console.log(`[HEART PICKUP] Player ${player.id} gained a life: ${currentLives} → ${newLives}`);
                 }
 
+                // Remove the power-up's DOM element from the screen
                 if (pUp.el && pUp.el.parentNode) {
                     pUp.el.parentNode.removeChild(pUp.el);
                 }
 
-                if (onPowerUpPicked && pUp.type !== 'HEART') {
+                // Notify game.js via callback (handles HUD update + server sync)
+                // CRITICAL: This triggers updateHudStats, NOT onPlayerHurt
+                if (onPowerUpPicked) {
                     onPowerUpPicked(player.id, pUp.type, upPos.gridX, upPos.gridY);
                 }
 
+                // Destroy the power-up entity from the world immediately
                 world.destroyEntity(pUpEntity);
+                console.log(`[HEART DESTROYED] Heart entity removed from world at (${upPos.gridX}, ${upPos.gridY})`);
                 break;
             }
         }

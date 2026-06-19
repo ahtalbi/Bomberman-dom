@@ -353,31 +353,18 @@ export class GameEngine {
             if (this.localPlayerEntity === null) return;
 
             const player = this.world.getComponent(this.localPlayerEntity, 'Player');
+            // Update HUD for local player when they pick up ANY power-up (including HEART)
             if (player && player.id === id) {
                 this.updateHudStats(this.localPlayerEntity);
             }
 
+            // Notify server for sync across all clients
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.send(JSON.stringify({
-                    type: 'POWERUP_PICKED',
-                    payload: { id, type, x, y }
-                }));
-            }
-        };
-
-        const onHeartPickedUp = (entity, playerId, newLives, gridX, gridY) => {
-            this.claimedPowerUps.add(`${gridX},${gridY}`);
-
-            // CRITICAL: Update HUD immediately for local player
-            if (entity === this.localPlayerEntity) {
-                setLives(newLives);
-            }
-
-            // Notify the server about the item pickup so it broadcasts to all clients
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                this.socket.send(JSON.stringify({
-                    type: 'ITEM_PICKUP',
-                    payload: { playerId, newLives, gridX, gridY }
+                    type: type === 'HEART' ? 'ITEM_PICKUP' : 'POWERUP_PICKED',
+                    payload: type === 'HEART'
+                        ? { playerId: id, newLives: player?.lives, x, y }
+                        : { id, type, x, y }
                 }));
             }
         };
@@ -404,7 +391,7 @@ export class GameEngine {
         this.world.addSystem((w, dt, now) => movementSystem(w, dt, now, this.mapData, TILE_SIZE));
         this.world.addSystem((w, dt, now) => bombSystem(w, dt, now, this.mapData, updateMapCell, destroyBoxCallback, TILE_SIZE));
         this.world.addSystem((w, dt, now) => damageSystem(this.world, now, onPlayerHurt, this.localPlayerEntity, TILE_SIZE, this.socket));
-        this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked, onHeartPickedUp));
+        this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked));
         this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
     }
 
