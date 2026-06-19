@@ -685,3 +685,116 @@ body.menu-page #root {
     0% { transform: translateY(0px); }
     100% { transform: translateY(-6px); }
 }
+
+/* Extra life drop - appears when a player dies */
+.extra-life-drop {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.1); 
+        opacity: 0.8; 
+    }
+}
+
+/* Win/Loss Pop-up Styles */
+.game-result-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.game-result-popup-content {
+    background: #1c1726;
+    padding: 40px 50px;
+    border: 6px solid #000000;
+    box-shadow: 
+        -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
+        inset -6px -6px 0 0 #100d17,
+        inset 6px 6px 0 0 #3a314c;
+    text-align: center;
+    animation: slideIn 0.4s ease-out;
+    max-width: min(400px, calc(100vw - 40px));
+}
+
+.game-result-title {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 48px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0 0 16px 0;
+    text-shadow: 4px 4px 0px #000;
+}
+
+.game-result-popup.win .game-result-title {
+    color: #ffc457;
+}
+
+.game-result-popup.loss .game-result-title {
+    color: #f87171;
+}
+
+.game-result-message {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    color: #ffffff;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.game-result-button {
+    min-height: 48px;
+    padding: 0 32px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000000;
+    background: #ffc457;
+    cursor: pointer;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        inset -4px -4px 0px 0px #b78119,
+        inset 4px 4px 0px 0px #ffe19e;
+    transition: background 0.2s ease;
+}
+
+.game-result-button:hover {
+    background: #ffd783;
+    box-shadow: 
+        inset -4px -4px 0px 0px #cc962d,
+        inset 4px 4px 0px 0px #ffffff;
+}
+
+.game-result-button:active {
+    box-shadow: 
+        inset 4px 4px 0px 0px #b78119,
+        inset -4px -4px 0px 0px #ffe19e;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

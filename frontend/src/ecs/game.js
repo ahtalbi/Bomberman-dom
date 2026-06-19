@@ -11,7 +11,7 @@ import {
 import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
-import { damageSystem } from './systems/damageSystem.js';
+import { damageSystem, checkExtraLifeCollision, checkGameEndConditions } from './systems/damageSystem.js';
 import { powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
 import { setBombs, setLives, setRange, setSpeed } from '../pages/game';
 
@@ -37,6 +37,7 @@ export class GameEngine {
     }
 
     init(localPlayerId, allPlayers) {
+        this.totalPlayers = allPlayers.length;
         const normalizedLocalPlayerId = String(localPlayerId);
 
         allPlayers.forEach(pData => {
@@ -343,6 +344,13 @@ export class GameEngine {
         const dt = now - this.lastTime;
         this.lastTime = now;
         this.world.update(dt, now);
+        
+        // Check for extra life collision with players
+        checkExtraLifeCollision(this.world, TILE_SIZE);
+        
+        // Check for game end conditions (win/loss)
+        checkGameEndConditions(this.world, this.localPlayerEntity, this.playerEntities, this.totalPlayers);
+        
         this.animationFrame = requestAnimationFrame((nextNow) => this.gameLoop(nextNow));
     }
 
