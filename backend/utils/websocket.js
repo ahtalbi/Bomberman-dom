@@ -56,23 +56,24 @@ export function handleWebsocket(message, ws) {
             break;
         case "player_died":
             const room = roomsHandler.getRoomBySocket(ws);
-            if (room && room.inGame) {
-                const player = room.players.find(p => p.ws === ws);
-                if (player && !room.deadPlayers.has(player.id)) {
-                    room.deadPlayers.add(player.id);
-                    console.log(`[Game Event] Player ${player.nickname} (ID: ${player.id}) was eliminated in room ${room.id}.`);
+            const player = room ? room.players.find(p => p.ws === ws) : null;
 
-                    const alivePlayers = room.players.filter(p => !room.deadPlayers.has(p.id));
+            // **DUPLICATE GUARD (THE FILTER)**: Check if this is a new death event
+            if (room && room.inGame && !room.deadPlayers.has(player?.socketId)) {
+                // Valid, new death event - process it
+                room.deadPlayers.add(player.socketId);
 
-                    if (room.initialPlayerCount > 1 && alivePlayers.length === 1) {
-                        const winner = alivePlayers[0];
-                        console.log(`[Game Event] Winner found: ${winner.nickname}. Broadcasting 'game_won'.`);
-                        room.broadcast({
-                            type: "game_won",
-                            winnerName: winner.nickname,
-                        });
-                    }
+                const alivePlayersCount = room.players.length - room.deadPlayers.size;
+                console.log(`[DEBUG - Math] ${player.nickname} died. Alive remaining: ${alivePlayersCount}`);
+                console.log(`[Game Event] Player ${player.nickname} (ID: ${player.id}) was eliminated in room ${room.id}.`);
+
+                // Only trigger game_won if exactly 1 player remains alive
+                if (alivePlayersCount === 1) {
+                    room.checkAndDeclareWinner();
                 }
+            } else if (room && player?.socketId) {
+                // Duplicate event detected - ignore it silently but log for debugging
+                console.log(`[DEBUG] Ignored duplicate death event from: ${player.socketId}`);
             }
             break;
     }

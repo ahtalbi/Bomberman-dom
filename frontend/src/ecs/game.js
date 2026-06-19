@@ -307,6 +307,9 @@ export class GameEngine {
             player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
         } else if (type === 'FLAME') {
             player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
+        } else if (type === 'HEART') {
+            // HEART power-up: increment lives (cap at 3)
+            player.lives = Math.min((player.lives || 0) + 1, 3);
         }
     }
 
@@ -329,9 +332,11 @@ export class GameEngine {
         };
 
         const onPlayerHurt = (entity, id, remainingLives) => {
-            // Always notify the server when ANY player dies.
-            // The server will validate the death event.
-            if (remainingLives <= 0 && this.socket && this.socket.readyState === WebSocket.OPEN) {
+            // CRITICAL: Only send player_died if THIS IS THE LOCAL PLAYER.
+            // The ECS damageSystem runs on ALL clients, so every client detects
+            // every collision. We must guard the WebSocket message to prevent
+            // incorrect death reports.
+            if (remainingLives <= 0 && entity === this.localPlayerEntity && this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.send(JSON.stringify({
                     type: 'player_died'
                 }));
@@ -360,6 +365,23 @@ export class GameEngine {
             }
         };
 
+        const onHeartPickedUp = (entity, playerId, newLives, gridX, gridY) => {
+            this.claimedPowerUps.add(`${gridX},${gridY}`);
+
+            // CRITICAL: Update HUD immediately for local player
+            if (entity === this.localPlayerEntity) {
+                setLives(newLives);
+            }
+
+            // Notify the server about the item pickup so it broadcasts to all clients
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({
+                    type: 'ITEM_PICKUP',
+                    payload: { playerId, newLives, gridX, gridY }
+                }));
+            }
+        };
+
         this.world.broadcastMovement = (entity, x, y, gridX, gridY, direction, isMoving) => {
             const player = this.world.getComponent(entity, 'Player');
             if (!player || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
@@ -382,7 +404,7 @@ export class GameEngine {
         this.world.addSystem((w, dt, now) => movementSystem(w, dt, now, this.mapData, TILE_SIZE));
         this.world.addSystem((w, dt, now) => bombSystem(w, dt, now, this.mapData, updateMapCell, destroyBoxCallback, TILE_SIZE));
         this.world.addSystem((w, dt, now) => damageSystem(this.world, now, onPlayerHurt, this.localPlayerEntity, TILE_SIZE, this.socket));
-        this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked));
+        this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked, onHeartPickedUp));
         this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
     }
 

@@ -1,4 +1,4 @@
-export function powerUpSystem(world, onPowerUpPicked) {
+export function powerUpSystem(world, onPowerUpPicked, onHeartPickedUp) {
     const players = world.query('Position', 'Velocity', 'Player');
     const powerUps = world.query('Position', 'PowerUp');
 
@@ -17,29 +17,33 @@ export function powerUpSystem(world, onPowerUpPicked) {
                 pUp.pickedUp = true;
 
                 if (pUp.type === 'SPEED') {
-                    vel.speed = Math.min(vel.speed + 1, 8); 
-                } 
+                    vel.speed = Math.min(vel.speed + 1, 8);
+                }
                 else if (pUp.type === 'BOMBS') {
                     player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
-                } 
+                }
                 else if (pUp.type === 'FLAME') {
                     player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
                 }
                 else if (pUp.type === 'HEART') {
-                    // Heart power-up: increment player's lives by 1
-                    player.lives = (player.lives || 0) + 1;
+                    // Heart power-up: increment player's lives by 1 (cap at 3)
+                    player.lives = Math.min((player.lives || 0) + 1, 3);
+                    // CRITICAL: Call the heart-specific callback immediately to update HUD
+                    if (onHeartPickedUp) {
+                        onHeartPickedUp(playerEntity, player.id, player.lives, upPos.gridX, upPos.gridY);
+                    }
                 }
 
                 if (pUp.el && pUp.el.parentNode) {
                     pUp.el.parentNode.removeChild(pUp.el);
                 }
 
-                if (onPowerUpPicked) {
+                if (onPowerUpPicked && pUp.type !== 'HEART') {
                     onPowerUpPicked(player.id, pUp.type, upPos.gridX, upPos.gridY);
                 }
 
                 world.destroyEntity(pUpEntity);
-                break; 
+                break;
             }
         }
     }

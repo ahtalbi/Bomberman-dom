@@ -127,7 +127,11 @@ class Room {
         const playerIndex = this.players.findIndex(player => player.ws === ws);
         if (playerIndex === -1) return false;
 
-        const disconnectedPlayerId = this.players[playerIndex].id;
+        const disconnectedPlayer = this.players[playerIndex];
+        const disconnectedSocketId = disconnectedPlayer.socketId;
+        console.log(`[DEBUG - Disconnect] Room: ${this.id} | SocketID: ${disconnectedSocketId} | PlayerName: ${disconnectedPlayer.nickname}`);
+        console.log(`[DEBUG - Math] BEFORE Remove: TotalPlayers: ${this.players.length} | DeadPlayersSetSize: ${this.deadPlayers.size}`);
+
         this.players.splice(playerIndex, 1);
 
         if (this.players.length === 0) {
@@ -137,20 +141,15 @@ class Room {
         }
 
         if (this.inGame) {
-            // Correctly mark the disconnected player as "dead"
-            this.deadPlayers.add(disconnectedPlayerId);
-            
-            const alivePlayers = this.players.filter(p => !this.deadPlayers.has(p.id));
-            if (this.initialPlayerCount > 1 && alivePlayers.length === 1 && this.players.length > 0) {
-                const winner = alivePlayers[0];
-                this.broadcast({ // Should broadcast to everyone including the disconnected player if they were still connected
-                    type: "game_won",
-                    winnerName: winner.nickname,
-                });
-            } else if (this.players.length <= 1) {
-                // If only one player is left, they win by default.
-                this.players[0]?.ws.send(JSON.stringify({ type: "room_alone" }));
+            // Mark the disconnected player as "dead" if not already marked
+            if (!this.deadPlayers.has(disconnectedSocketId)) {
+                this.deadPlayers.add(disconnectedSocketId);
+                console.log(`[DEBUG - Math] AFTER Add to deadSet: TotalPlayers: ${this.players.length} | DeadPlayersSetSize: ${this.deadPlayers.size}`);
+            } else {
+                console.log(`[DEBUG] Ignored duplicate death marker for disconnected player: ${disconnectedSocketId}`);
             }
+
+            this.checkAndDeclareWinner();
             return true;
         }
 
@@ -163,6 +162,47 @@ class Room {
 
         this.broadcastRoomUpdate();
         return true;
+    }
+
+    getAlivePlayersCount() {
+        return this.players.length - this.deadPlayers.size;
+    }
+
+    checkAndDeclareWinner() {
+        const roomId = this.id;
+        console.log(`[DEBUG - Winner Check] Room: ${roomId} | TotalPlayers: ${this.players.length} | DeadPlayers: ${this.deadPlayers.size}`);
+
+        if (this.initialPlayerCount <= 1 || this.players.length === 0) {
+            console.log(`[DEBUG - EarlyReturn] InitialCount: ${this.initialPlayerCount} | PlayersLength: ${this.players.length}`);
+            return;
+        }
+
+        // Debug: Log each player's alive/dead status
+        this.players.forEach(player => {
+            const isDead = this.deadPlayers.has(player.socketId);
+            console.log(`[DEBUG - AliveCheck] SocketID: ${player.socketId} (${player.nickname}) | IsDead: ${isDead}`);
+        });
+
+        const aliveCount = this.getAlivePlayersCount();
+        console.log(`[DEBUG - FinalResult] Room: ${roomId} | AliveCount: ${aliveCount} | WinTriggered: ${aliveCount === 1}`);
+
+        if (aliveCount === 1) {
+            const winner = this.players.find(p => !this.deadPlayers.has(p.socketId));
+            console.log(`[DEBUG - Winner] WinnerSocketID: ${winner?.socketId} | WinnerName: ${winner?.nickname}`);
+            if (winner) {
+                this.broadcast({
+                    type: "game_won",
+                    winnerName: winner.nickname,
+                });
+            }
+        } else if (aliveCount === 0 && this.players.length > 0) {
+            // All players are dead (edge case)
+            console.log(`[DEBUG - AllDead] All players eliminated in room ${roomId}`);
+            this.broadcast({
+                type: "game_won",
+                winnerName: "Nobody - All players eliminated",
+            });
+        }
     }
 
     startCountdown() {

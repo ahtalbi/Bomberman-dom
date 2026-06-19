@@ -56,7 +56,7 @@ export function spawnHeartPowerUp(world, gridX, gridY, container, tileSize = 64)
 /**
  * Handles player death transition when lives reach 0.
  * Removes the player's DOM element and spawns a HEART power-up entity at the death location.
- * 
+ *
  * @param {World} world - The game world instance
  * @param {number} playerEntity - The entity ID of the dying player
  * @param {number} tileSize - The size of each grid tile (default: 64)
@@ -67,26 +67,31 @@ function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null)
     const position = world.getComponent(playerEntity, 'Position');
     const renderable = world.getComponent(playerEntity, 'Renderable');
     const player = world.getComponent(playerEntity, 'Player');
-    
+
     if (!position || !renderable || !player) return;
-    
+
     // Store the grid coordinates where the player died
     const deathGridX = Math.floor((position.x + tileSize / 2) / tileSize);
     const deathGridY = Math.floor((position.y + tileSize / 2) / tileSize);
-    
-    // 1. Instead of destroying the entity, remove components that enable interaction and rendering.
-    // This effectively turns the player into a non-interactive "ghost" or spectator.
-    world.removeComponent(playerEntity, 'Renderable'); // This will stop it from being drawn
+
+    // CRITICAL: Remove the player's DOM element from the document BEFORE removing the Renderable component.
+    // This ensures the dead player visually disappears immediately.
+    if (renderable.el && renderable.el.parentNode) {
+        renderable.el.parentNode.removeChild(renderable.el);
+    }
+
+    // Remove components that enable interaction and rendering.
+    world.removeComponent(playerEntity, 'Renderable');
     world.removeComponent(playerEntity, 'Velocity');
     world.removeComponent(playerEntity, 'Input');
-    // We keep Position and Player components to know where they are and who they are.
-    
-    // 2. Spawn a HEART power-up entity at the death location (proper ECS entity)
+    // We keep Position and Player components to know where they were.
+
+    // Spawn a HEART power-up entity at the death location (proper ECS entity)
     const gameContainer = container || document.getElementById('game-container');
     if (gameContainer) {
         spawnHeartPowerUp(world, deathGridX, deathGridY, gameContainer, tileSize);
     }
-    
+
     console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Heart power-up dropped.`);
 }
 
@@ -112,15 +117,20 @@ export function damageSystem(world, now, onPlayerHurt, localPlayerEntity, tileSi
                 player.lives = Math.max(previousLives - 1, 0);
                 player.invincibleUntil = now + 1500;
                 
-                // Always call the callback to update HUD or notify server.
-                if (onPlayerHurt) {
-                    onPlayerHurt(playerEntity, player.id, player.lives);
-                }
-                
-                // If the player is dead, THEN perform local cleanup.
-                // This happens AFTER the server has been notified via the callback.
+                // If the player is dead, report death ONCE using guard clause
                 if (player.lives <= 0) {
+                    if (player.alreadyReportedDead) break;
+                    player.alreadyReportedDead = true;
+
+                    if (onPlayerHurt) {
+                        onPlayerHurt(playerEntity, player.id, 0);
+                    }
                     handlePlayerDeath(world, playerEntity, tileSize);
+                } else {
+                    // Player still alive, report normal damage
+                    if (onPlayerHurt) {
+                        onPlayerHurt(playerEntity, player.id, player.lives);
+                    }
                 }
                 
                 // Break the loop since the player has already taken damage from this explosion.
