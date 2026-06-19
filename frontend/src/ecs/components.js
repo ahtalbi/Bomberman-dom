@@ -12,6 +12,8 @@ export const PositionComponent = (gx, gy, tileSize = 64) => ({
 export const VelocityComponent = (baseSpeed = 2.5) => ({
     baseSpeed: baseSpeed,
     speed: baseSpeed,
+    speedBoost: 0,
+    speedBoostTimeRemaining: 0,
     isMoving: false,
     direction: 'down'
 });
@@ -42,7 +44,7 @@ export const PlayerComponent = (id, charType, isLocal = false) => ({
     isLocal: isLocal
 });
 
-export const BombComponent = (ownerId, timer = 2000, range = 4) => ({
+export const BombComponent = (ownerId, timer = 2000, range = 2) => ({
     ownerId: ownerId,
     timer: timer,
     range: range,
