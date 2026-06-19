@@ -1,3 +1,15 @@
+export const SPEED_POWERUP_AMOUNT = 1;
+export const MAX_PLAYER_SPEED = 8;
+export const SPEED_POWERUP_DURATION = 5000;
+
+export function applySpeedPowerUp(velocity) {
+    const currentBoost = velocity.speedBoost || 0;
+    const maxBoost = Math.max(MAX_PLAYER_SPEED - velocity.baseSpeed, 0);
+    velocity.speedBoost = Math.min(currentBoost + SPEED_POWERUP_AMOUNT, maxBoost);
+    velocity.speedBoostTimeRemaining = SPEED_POWERUP_DURATION;
+    velocity.speed = Math.min(velocity.baseSpeed + velocity.speedBoost, MAX_PLAYER_SPEED);
+}
+
 export function powerUpSystem(world, onPowerUpPicked) {
     const players = world.query('Position', 'Velocity', 'Player');
     const powerUps = world.query('Position', 'PowerUp');
@@ -17,7 +29,7 @@ export function powerUpSystem(world, onPowerUpPicked) {
                 pUp.pickedUp = true;
 
                 if (pUp.type === 'SPEED') {
-                    vel.speed = Math.min(vel.speed + 1, 8); 
+                    applySpeedPowerUp(vel);
                 } 
                 else if (pUp.type === 'BOMBS') {
                     player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
