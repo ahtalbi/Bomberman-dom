@@ -3,46 +3,101 @@ import { getPlayerName } from '../game.js';
 /**
  * Creates a Loss pop-up modal for the eliminated player.
  * Blocks their screen immediately so they cannot spectate.
+ * This function is idempotent - it will only create the modal once.
  * @param {string} playerName - The name of the eliminated player
+ * @returns {boolean} - True if modal was created, false if already exists
  */
 function showLossPopup(playerName) {
-    // Check if popup already exists to avoid duplicates
-    if (document.querySelector('.game-result-popup')) return;
+    // Prevent multiple renders - check if already exists
+    if (document.querySelector('.game-result-popup')) {
+        return false;
+    }
     
     // Create overlay with extremely high z-index to block entire screen
     const overlay = document.createElement('div');
     overlay.className = 'game-result-popup loss';
-    overlay.style.zIndex = '99999';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
+    overlay.id = 'loss-modal';
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('role', 'dialog');
     
-    // Create popup content
+    // Inline styles for maximum compatibility and immediate rendering
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 99999;
+        background-color: rgba(0, 0, 0, 0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    `;
+    
+    // Create popup content container
     const popup = document.createElement('div');
-    popup.className = 'game-result-popup-content';
+    popup.style.cssText = `
+        background: #1c1726;
+        padding: 40px 50px;
+        border: 6px solid #000000;
+        box-shadow: 
+            -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
+            inset -6px -6px 0 0 #100d17,
+            inset 6px 6px 0 0 #3a314c;
+        text-align: center;
+        animation: slideIn 0.3s ease-out;
+        max-width: min(450px, calc(100vw - 40px));
+    `;
     
+    // Title with exact required text
     const titleEl = document.createElement('h1');
-    titleEl.textContent = 'You are terrible at this! Wach la3b b rjlik?';
-    titleEl.className = 'game-result-title';
-    titleEl.style.color = '#ff4444';
-    titleEl.style.fontSize = '36px';
-    titleEl.style.marginBottom = '30px';
+    titleEl.textContent = 'LOSER! Wach la3b b rjlik?';
+    titleEl.style.cssText = `
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 42px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: #ff4444;
+        margin: 0 0 24px 0;
+        text-shadow: 4px 4px 0px #000;
+        letter-spacing: 2px;
+    `;
     
+    // Restart button with hard reset
     const button = document.createElement('button');
     button.textContent = 'Restart';
-    button.className = 'game-result-button';
-    button.style.padding = '15px 40px';
-    button.style.fontSize = '20px';
-    button.style.cursor = 'pointer';
+    button.style.cssText = `
+        min-height: 48px;
+        padding: 0 32px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 18px;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: #000000;
+        background: #ffc457;
+        cursor: pointer;
+        box-sizing: border-box;
+        border: 4px solid #000000;
+        box-shadow: 
+            inset -4px -4px 0px 0px #b78119,
+            inset 4px 4px 0px 0px #ffe19e;
+        transition: background 0.2s ease;
+    `;
+    
+    // Hard reset button - MUST use window.location.reload()
     button.addEventListener('click', () => {
-        // Force hard reset - send to initial page
-        window.location.href = '/';
+        window.location.reload();
+    });
+    
+    // Hover effect
+    button.addEventListener('mouseenter', () => {
+        button.style.background = '#ffd783';
+    });
+    button.addEventListener('mouseleave', () => {
+        button.style.background = '#ffc457';
     });
     
     popup.appendChild(titleEl);
@@ -51,6 +106,11 @@ function showLossPopup(playerName) {
     
     // Append to document.body to block the entire screen immediately
     document.body.appendChild(overlay);
+    
+    // Disable scrolling on body
+    document.body.style.overflow = 'hidden';
+    
+    return true;
 }
 
 /**
@@ -92,8 +152,63 @@ function showWinPopup(playerName) {
 }
 
 /**
+ * Spawns a HEART power-up entity at the specified grid coordinates.
+ * This creates a proper ECS entity with Position, PowerUp, and Renderable components.
+ * 
+ * @param {World} world - The game world instance
+ * @param {number} gridX - Grid X coordinate
+ * @param {number} gridY - Grid Y coordinate
+ * @param {HTMLElement} container - The game container element
+ * @param {number} tileSize - The size of each grid tile (default: 64)
+ */
+export function spawnHeartPowerUp(world, gridX, gridY, container, tileSize = 64) {
+    // Create a new entity for the heart power-up
+    const heartEntity = world.createEntity();
+    
+    // Add Position component
+    world.addComponent(heartEntity, 'Position', {
+        gridX: gridX,
+        gridY: gridY,
+        x: gridX * tileSize,
+        y: gridY * tileSize
+    });
+    
+    // Add PowerUp component with type 'HEART'
+    world.addComponent(heartEntity, 'PowerUp', {
+        type: 'HEART',
+        pickedUp: false,
+        el: null  // Will be set after creating the DOM element
+    });
+    
+    // Create the DOM element for rendering
+    const heartDiv = document.createElement('div');
+    heartDiv.className = 'powerup powerup-heart';
+    heartDiv.style.position = 'absolute';
+    heartDiv.style.left = `${gridX * tileSize}px`;
+    heartDiv.style.top = `${gridY * tileSize}px`;
+    heartDiv.style.width = `${tileSize}px`;
+    heartDiv.style.height = `${tileSize}px`;
+    heartDiv.style.display = 'flex';
+    heartDiv.style.alignItems = 'center';
+    heartDiv.style.justifyContent = 'center';
+    heartDiv.style.fontSize = '32px';
+    heartDiv.style.zIndex = '5';
+    heartDiv.textContent = '❤️';
+    
+    container.appendChild(heartDiv);
+    
+    // Update the PowerUp component with the DOM element reference
+    const powerUp = world.getComponent(heartEntity, 'PowerUp');
+    if (powerUp) {
+        powerUp.el = heartDiv;
+    }
+    
+    console.log(`[Heart Drop] Spawned HEART power-up at (${gridX}, ${gridY})`);
+}
+
+/**
  * Handles player death transition when lives reach 0.
- * Removes the player's DOM element and spawns an extra-life drop at the death location.
+ * Removes the player's DOM element and spawns a HEART power-up entity at the death location.
  * 
  * @param {World} world - The game world instance
  * @param {number} playerEntity - The entity ID of the dying player
@@ -120,88 +235,13 @@ function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null)
     // 2. Destroy the player entity from the world (removes all components)
     world.destroyEntity(playerEntity);
     
-    // 3. Create a div with heart emoji at the exact death location
-    const heartDiv = document.createElement('div');
-    heartDiv.className = 'extra-life-drop';
-    heartDiv.textContent = '❤️';
-    heartDiv.style.position = 'absolute';
-    heartDiv.style.left = `${deathGridX * tileSize}px`;
-    heartDiv.style.top = `${deathGridY * tileSize}px`;
-    heartDiv.style.width = `${tileSize}px`;
-    heartDiv.style.height = `${tileSize}px`;
-    heartDiv.style.display = 'flex';
-    heartDiv.style.alignItems = 'center';
-    heartDiv.style.justifyContent = 'center';
-    heartDiv.style.fontSize = '32px';
-    heartDiv.style.zIndex = '5';
-    heartDiv.style.pointerEvents = 'none';
-    
-    // Append to the game container
+    // 3. Spawn a HEART power-up entity at the death location (proper ECS entity)
     const gameContainer = container || document.getElementById('game-container');
     if (gameContainer) {
-        gameContainer.appendChild(heartDiv);
+        spawnHeartPowerUp(world, deathGridX, deathGridY, gameContainer, tileSize);
     }
     
-    console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Heart dropped.`);
-}
-
-/**
- * Checks for collision between players and extra-life-drop DOM elements.
- * When a player collides with an extra-life-drop, they gain +1 life and the drop is removed.
- * Only the first player to touch it gets the life.
- * 
- * @param {World} world - The game world instance
- * @param {number} tileSize - The size of each grid tile (default: 64)
- */
-export function checkExtraLifeCollision(world, tileSize = 64) {
-    // Find all extra-life-drop elements in the DOM
-    const extraLifeDrops = document.querySelectorAll('.extra-life-drop');
-    if (extraLifeDrops.length === 0) return;
-    
-    // Get all active players with Position and Player components
-    const players = world.query('Position', 'Player');
-    if (players.length === 0) return;
-    
-    for (const drop of extraLifeDrops) {
-        // Parse the grid position from the drop's CSS left/top properties
-        const dropLeft = parseInt(drop.style.left, 10);
-        const dropTop = parseInt(drop.style.top, 10);
-        
-        if (isNaN(dropLeft) || isNaN(dropTop)) continue;
-        
-        const dropGridX = Math.round(dropLeft / tileSize);
-        const dropGridY = Math.round(dropTop / tileSize);
-        
-        for (const playerEntity of players) {
-            const pPos = world.getComponent(playerEntity, 'Position');
-            const player = world.getComponent(playerEntity, 'Player');
-            
-            if (!pPos || !player) continue;
-            
-            // Calculate player's current grid position
-            const playerGridX = Math.floor((pPos.x + tileSize / 2) / tileSize);
-            const playerGridY = Math.floor((pPos.y + tileSize / 2) / tileSize);
-            
-            // Check for collision (same grid cell)
-            if (playerGridX === dropGridX && playerGridY === dropGridY) {
-                // Get current lives value, default to 0 if undefined
-                const currentLives = player.lives || 0;
-                
-                // Increase player's lives by +1 (direct property assignment)
-                player.lives = currentLives + 1;
-                
-                // Remove the extra-life-drop from DOM immediately
-                if (drop.parentNode) {
-                    drop.parentNode.removeChild(drop);
-                }
-                
-                console.log(`[Extra Life] Player ${player.id} picked up an extra life! New lives: ${player.lives}`);
-                
-                // Break out of the inner loop since this drop is now gone
-                break;
-            }
-        }
-    }
+    console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Heart power-up dropped.`);
 }
 
 /**

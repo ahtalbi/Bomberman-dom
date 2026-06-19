@@ -25,6 +25,10 @@ export function powerUpSystem(world, onPowerUpPicked) {
                 else if (pUp.type === 'FLAME') {
                     player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
                 }
+                else if (pUp.type === 'HEART') {
+                    // Heart power-up: increment player's lives by 1
+                    player.lives = (player.lives || 0) + 1;
+                }
 
                 if (pUp.el && pUp.el.parentNode) {
                     pUp.el.parentNode.removeChild(pUp.el);

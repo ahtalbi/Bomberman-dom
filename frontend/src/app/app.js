@@ -96,6 +96,12 @@ wss.addEventListener("message", (event) => {
                 currentGameEngine.handleRemotePowerUpPicked(message.payload);
             }
             break;
+        case "item_picked":
+            // Handle remote heart pickup - update the player's lives on all clients
+            if (currentGameEngine) {
+                currentGameEngine.handleRemoteItemPickup(message.payload);
+            }
+            break;
     }
 });
 

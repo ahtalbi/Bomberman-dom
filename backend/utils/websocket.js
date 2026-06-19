@@ -47,6 +47,13 @@ export function handleWebsocket(message, ws) {
                 payload: message.payload,
             });
             break;
+        case "ITEM_PICKUP":
+            // Broadcast heart pickup to all players so they can update lives
+            roomsHandler.broadcastGameMessage(ws, {
+                type: "item_picked",
+                payload: message.payload,
+            });
+            break;
     }
 }
 
