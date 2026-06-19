@@ -12,7 +12,7 @@ import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
 import { damageSystem } from './systems/damageSystem.js';
-import { powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
+import { applySpeedPowerUp, powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
 import { setBombs, setLives, setRange, setSpeed } from '../pages/game';
 
 const TILE_SIZE = 64;
@@ -63,7 +63,7 @@ export class GameEngine {
             const playerComp = PlayerComponent(playerId, color, isLocal);
             playerComp.lives = 3;
             playerComp.maxBombs = 1;
-            playerComp.bombRange = 4;
+            playerComp.bombRange = 2;
             this.world.addComponent(playerEntity, 'Player', playerComp);
             this.playerEntities.set(playerId, playerEntity);
 
@@ -261,7 +261,7 @@ export class GameEngine {
         if (!player || !velocity) return;
 
         if (type === 'SPEED') {
-            velocity.speed = Math.min(velocity.speed + 1, 8);
+            applySpeedPowerUp(velocity);
         } else if (type === 'BOMBS') {
             player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
         } else if (type === 'FLAME') {
@@ -343,6 +343,9 @@ export class GameEngine {
         const dt = now - this.lastTime;
         this.lastTime = now;
         this.world.update(dt, now);
+        if (this.localPlayerEntity !== null) {
+            this.updateHudStats(this.localPlayerEntity);
+        }
         this.animationFrame = requestAnimationFrame((nextNow) => this.gameLoop(nextNow));
     }
 
