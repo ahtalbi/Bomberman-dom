@@ -4,6 +4,7 @@ import Register from "../pages/register";
 import Game from "../pages/game";
 import Menu from "../pages/menu";
 import Lobby from "../pages/lobby";
+import WinMenu from "../pages/WinMenu.jsx";
 import { setStates } from "../pages/lobby";
 import { setPlayerName as setHudPlayerName } from "../pages/game";
 import Sound from "../utils/sound";
@@ -77,7 +78,15 @@ wss.addEventListener("message", (event) => {
             document.body.className = "menu-page";
             render(<Menu />, root);
             break;
-            
+
+        case "game_won":
+            if (currentGameEngine) {
+                currentGameEngine.destroy();
+            }
+            document.body.className = "menu-page";
+            render(<WinMenu winnerName={message.winnerName} />, root);
+            break;
+
         case "chat_message":
             setMessages(prev => [...prev ,message.message]);
             break;

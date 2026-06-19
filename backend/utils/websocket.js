@@ -54,6 +54,27 @@ export function handleWebsocket(message, ws) {
                 payload: message.payload,
             });
             break;
+        case "player_died":
+            const room = roomsHandler.getRoomBySocket(ws);
+            if (room && room.inGame) {
+                const player = room.players.find(p => p.ws === ws);
+                if (player && !room.deadPlayers.has(player.id)) {
+                    room.deadPlayers.add(player.id);
+                    console.log(`[Game Event] Player ${player.nickname} (ID: ${player.id}) was eliminated in room ${room.id}.`);
+
+                    const alivePlayers = room.players.filter(p => !room.deadPlayers.has(p.id));
+
+                    if (room.initialPlayerCount > 1 && (room.initialPlayerCount - room.deadPlayers.size) === 1) {
+                        const winner = alivePlayers[0];
+                        console.log(`[Game Event] Winner found: ${winner.nickname}. Broadcasting 'game_won'.`);
+                        room.broadcast({
+                            type: "game_won",
+                            winnerName: winner.nickname,
+                        });
+                    }
+                }
+            }
+            break;
     }
 }
 

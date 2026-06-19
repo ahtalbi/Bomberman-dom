@@ -7,186 +7,12 @@ import {
     PlayerComponent,
     BombComponent
 } from './components.js';
-
 import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
 import { damageSystem, checkGameEndConditions, spawnHeartPowerUp } from './systems/damageSystem.js';
-
-// Import the popup functions from damageSystem.js (they're defined there but not exported)
-// We need to call them from checkGameEndConditionsWithFlag
-const { showLossPopup, showWinPopup } = (function() {
-    // These functions are defined inline since they're needed by game.js
-    // but are not exported from damageSystem.js
-    
-    function showLossPopup(playerName) {
-        if (document.querySelector('.game-result-popup')) return false;
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'game-result-popup loss';
-        overlay.id = 'loss-modal';
-        overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('role', 'dialog');
-        
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 99999;
-            background-color: rgba(0, 0, 0, 0.92);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        `;
-        
-        const popup = document.createElement('div');
-        popup.style.cssText = `
-            background: #1c1726;
-            padding: 40px 50px;
-            border: 6px solid #000000;
-            box-shadow: 
-                -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
-                inset -6px -6px 0 0 #100d17,
-                inset 6px 6px 0 0 #3a314c;
-            text-align: center;
-            animation: slideIn 0.3s ease-out;
-            max-width: min(450px, calc(100vw - 40px));
-        `;
-        
-        const titleEl = document.createElement('h1');
-        titleEl.textContent = 'LOSER! Wach la3b b rjlik?';
-        titleEl.style.cssText = `
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 42px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #ff4444;
-            margin: 0 0 24px 0;
-            text-shadow: 4px 4px 0px #000;
-            letter-spacing: 2px;
-        `;
-        
-        const button = document.createElement('button');
-        button.textContent = 'Restart';
-        button.style.cssText = `
-            min-height: 48px;
-            padding: 0 32px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 18px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #000000;
-            background: #ffc457;
-            cursor: pointer;
-            box-sizing: border-box;
-            border: 4px solid #000000;
-            box-shadow: 
-                inset -4px -4px 0px 0px #b78119,
-                inset 4px 4px 0px 0px #ffe19e;
-            transition: background 0.2s ease;
-        `;
-        
-        button.addEventListener('click', () => {
-            window.location.reload();
-        });
-        
-        button.addEventListener('mouseenter', () => {
-            button.style.background = '#ffd783';
-        });
-        button.addEventListener('mouseleave', () => {
-            button.style.background = '#ffc457';
-        });
-        
-        popup.appendChild(titleEl);
-        popup.appendChild(button);
-        overlay.appendChild(popup);
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-        
-        return true;
-    }
-    
-    function showWinPopup(playerName) {
-        if (document.querySelector('.game-result-popup')) return;
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'game-result-popup win';
-        overlay.style.zIndex = '99999';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100vw';
-        overlay.style.height = '100vh';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.92)';
-        overlay.style.display = 'flex';
-        overlay.style.alignItems = 'center';
-        overlay.style.justifyContent = 'center';
-        overlay.style.flexDirection = 'column';
-        
-        const popup = document.createElement('div');
-        popup.style.cssText = `
-            background: #1c1726;
-            padding: 40px 50px;
-            border: 6px solid #000000;
-            box-shadow: 
-                -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
-                inset -6px -6px 0 0 #100d17,
-                inset 6px 6px 0 0 #3a314c;
-            text-align: center;
-            animation: slideIn 0.3s ease-out;
-            max-width: min(450px, calc(100vw - 40px));
-        `;
-        
-        const titleEl = document.createElement('h1');
-        titleEl.textContent = `${playerName.toUpperCase()} WIN!`;
-        titleEl.style.cssText = `
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 42px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #ffc457;
-            margin: 0 0 24px 0;
-            text-shadow: 4px 4px 0px #000;
-            letter-spacing: 2px;
-        `;
-        
-        const button = document.createElement('button');
-        button.textContent = 'Return to Home';
-        button.style.cssText = `
-            min-height: 48px;
-            padding: 0 32px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 18px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #000000;
-            background: #ffc457;
-            cursor: pointer;
-            box-sizing: border-box;
-            border: 4px solid #000000;
-            box-shadow: 
-                inset -4px -4px 0px 0px #b78119,
-                inset 4px 4px 0px 0px #ffe19e;
-        `;
-        
-        button.addEventListener('click', () => {
-            window.location.reload();
-        });
-        
-        popup.appendChild(titleEl);
-        popup.appendChild(button);
-        overlay.appendChild(popup);
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-    }
-    
-    return { showLossPopup, showWinPopup };
-})();
+import WinMenu from '../pages/WinMenu.jsx';
+import { render } from '../../mini-framework/dom.js';
 
 import { powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
 import { setBombs, setLives, setRange, setSpeed } from '../pages/game';
@@ -205,6 +31,7 @@ export class GameEngine {
         this.world = new World();
         this.localPlayerEntity = null;
         this.playerEntities = new Map();
+        this.playerInfo = new Map(); // Store original player data like nickname
         this.lastTime = 0;
         this.removeInputListeners = null;
         this.animationFrame = null;
@@ -214,6 +41,8 @@ export class GameEngine {
         this.lossModalTriggered = false;
         // Flag to track if input should be disabled
         this.inputEnabled = true;
+        // Flag to stop the game loop once a winner is decided
+        this.gameEnded = false;
     }
 
     init(localPlayerId, allPlayers) {
@@ -223,6 +52,7 @@ export class GameEngine {
         allPlayers.forEach(pData => {
             const playerId = String(pData.id);
             const playerEntity = this.world.createEntity();
+            this.playerInfo.set(playerId, pData); // Store original player data
             const playerDiv = document.createElement('div');
             const color = pData.color || "white";
 
@@ -499,6 +329,14 @@ export class GameEngine {
         };
 
         const onPlayerHurt = (entity, id, remainingLives) => {
+            // Always notify the server when ANY player dies.
+            // The server will validate the death event.
+            if (remainingLives <= 0 && this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({
+                    type: 'player_died'
+                }));
+            }
+            // Update the HUD only for the local player.
             if (entity === this.localPlayerEntity) {
                 setLives(remainingLives);
             }
@@ -543,7 +381,7 @@ export class GameEngine {
 
         this.world.addSystem((w, dt, now) => movementSystem(w, dt, now, this.mapData, TILE_SIZE));
         this.world.addSystem((w, dt, now) => bombSystem(w, dt, now, this.mapData, updateMapCell, destroyBoxCallback, TILE_SIZE));
-        this.world.addSystem((w, dt, now) => damageSystem(w, now, onPlayerHurt, TILE_SIZE));
+        this.world.addSystem((w, dt, now) => damageSystem(this.world, now, onPlayerHurt, this.localPlayerEntity, TILE_SIZE, this.socket));
         this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked));
         this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
     }
@@ -554,11 +392,18 @@ export class GameEngine {
         const dt = now - this.lastTime;
         this.lastTime = now;
         this.world.update(dt, now);
-        
-        // Check for game end conditions (win/loss) with state flag to prevent loop trap
-        this.checkGameEndConditionsWithFlag();
-        
+
         this.animationFrame = requestAnimationFrame((nextNow) => this.gameLoop(nextNow));
+    }
+
+    handleGameOver(winnerName) {
+        if (this.gameEnded) return; // Prevent multiple triggers
+        this.gameEnded = true;
+        this.destroy();
+
+        const root = document.getElementById('root');
+        document.body.className = 'menu-page';
+        render(<WinMenu winnerName={winnerName} />, root);
     }
 
     /**
@@ -566,50 +411,6 @@ export class GameEngine {
      * Prevents the "Loop Trap" - modal is only rendered ONCE when lives reach 0.
      * Also disables input immediately when player dies.
      */
-    checkGameEndConditionsWithFlag() {
-        // Count active players (players with lives > 0)
-        const allPlayers = this.world.query('Position', 'Player');
-        let activePlayerCount = 0;
-        let lastActivePlayerEntity = null;
-        
-        for (const playerEntity of allPlayers) {
-            const player = this.world.getComponent(playerEntity, 'Player');
-            if (player && (player.lives ?? 0) > 0) {
-                activePlayerCount++;
-                lastActivePlayerEntity = playerEntity;
-            }
-        }
-        
-        const localPlayerName = getPlayerName();
-        
-        // Check if local player is eliminated - with state flag to prevent multiple renders
-        if (this.localPlayerEntity !== null) {
-            const localPlayer = this.world.getComponent(this.localPlayerEntity, 'Player');
-            if (localPlayer && (localPlayer.lives ?? 0) <= 0) {
-                // Disable input immediately when lives reach 0
-                this.inputEnabled = false;
-                
-                // Only show loss popup ONCE (prevents "Loop Trap")
-                if (!this.lossModalTriggered) {
-                    this.lossModalTriggered = true;
-                    showLossPopup(localPlayerName);
-                }
-            }
-        }
-        
-        // Check win condition: EXACTLY 1 active player remains on the board
-        if (activePlayerCount === 1 && this.totalPlayers > 1 && lastActivePlayerEntity !== null) {
-            const lastPlayer = this.world.getComponent(lastActivePlayerEntity, 'Player');
-            if (lastPlayer) {
-                // Check if this is the local player
-                if (this.localPlayerEntity !== null && lastActivePlayerEntity === this.localPlayerEntity) {
-                    if (!document.querySelector('.game-result-popup')) {
-                        showWinPopup(localPlayerName);
-                    }
-                }
-            }
-        }
-    }
 
     destroy() {
         this.running = false;

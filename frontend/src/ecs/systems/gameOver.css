@@ -1,0 +1,88 @@
+/* /home/obenmbar/bomberman-dom/frontend/src/ecs/systems/gameOver.css */
+
+/* --- General Popup Styles --- */
+.game-result-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+    background-color: rgba(0, 0, 0, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* --- Shared Content Box Style (for both Win and Loss) --- */
+.game-result-popup .popup-content {
+    background: #1c1726;
+    padding: 40px 50px;
+    border: 6px solid #000000;
+    box-shadow: 
+        -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
+        inset -6px -6px 0 0 #100d17,
+        inset 6px 6px 0 0 #3a314c;
+    text-align: center;
+    animation: slideIn 0.3s ease-out;
+    max-width: min(450px, calc(100vw - 40px));
+}
+
+/* --- Shared Button Style (for both Win and Loss) --- */
+.game-result-popup .popup-button {
+    min-height: 48px;
+    padding: 0 32px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000000;
+    background: #ffc457;
+    cursor: pointer;
+    box-sizing: border-box;
+    border: 4px solid #000000;
+    box-shadow: 
+        inset -4px -4px 0px 0px #b78119,
+        inset 4px 4px 0px 0px #ffe19e;
+    transition: background 0.2s ease;
+}
+
+.game-result-popup .popup-button:hover {
+    background: #ffd783;
+}
+
+/* --- Shared Title Style --- */
+.game-result-popup .popup-title {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 42px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0 0 24px 0;
+    text-shadow: 4px 4px 0px #000;
+    letter-spacing: 2px;
+}
+
+/* --- Loss Popup Title Color --- */
+.game-result-popup.loss .popup-title {
+    color: #ff4444;
+}
+
+/* --- Win Popup Title Color --- */
+.game-result-popup.win .popup-title {
+    color: #ffc457; /* Gold color for the winner */
+}
+
+/* --- General Animation --- */
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

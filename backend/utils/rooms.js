@@ -104,6 +104,8 @@ class Room {
         this.inGame = false;
         this.players = [];
         this.secondsLeft = config.waitTime;
+        this.deadPlayers = new Set();
+        this.initialPlayerCount = 0; // Track players at game start
         this.timer = null;
     }
 
@@ -123,9 +125,9 @@ class Room {
 
     removePlayer(ws) {
         const playerIndex = this.players.findIndex(player => player.ws === ws);
-
         if (playerIndex === -1) return false;
 
+        const disconnectedPlayerId = this.players[playerIndex].id;
         this.players.splice(playerIndex, 1);
 
         if (this.players.length === 0) {
@@ -135,17 +137,20 @@ class Room {
         }
 
         if (this.inGame) {
-            clearInterval(this.timer);
-            this.timer = null;
-            this.inGame = false;
-            this.inLobby = false;
-
-            this.players[0].ws.send(JSON.stringify({
-                type: "room_alone",
-                winner: true,
-            }));
-
-            this.players = [];
+            // Correctly mark the disconnected player as "dead"
+            this.deadPlayers.add(disconnectedPlayerId);
+            
+            const alivePlayers = this.players.filter(p => !this.deadPlayers.has(p.id));
+            if (this.initialPlayerCount > 1 && (this.initialPlayerCount - this.deadPlayers.size) === 1) {
+                const winner = alivePlayers[0];
+                this.broadcast({ // Should broadcast to everyone including the disconnected player if they were still connected
+                    type: "game_won",
+                    winnerName: winner.nickname,
+                });
+            } else if (this.players.length <= 1) {
+                // If only one player is left, they win by default.
+                this.players[0]?.ws.send(JSON.stringify({ type: "room_alone" }));
+            }
             return true;
         }
 
@@ -179,6 +184,7 @@ class Room {
                 this.timer = null;
                 this.inLobby = false;
 
+                this.initialPlayerCount = this.players.length; // Set the initial count
                 const gameMap = new GameMap();
 
                 const players = this.players.map((player, index) => ({
