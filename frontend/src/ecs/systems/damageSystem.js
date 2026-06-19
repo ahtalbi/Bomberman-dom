@@ -1,3 +1,5 @@
+import { getPlayerName } from '../game.js';
+
 /**
  * Creates a Loss pop-up modal for the eliminated player.
  * @param {string} playerName - The name of the eliminated player
@@ -6,31 +8,29 @@ function showLossPopup(playerName) {
     // Check if popup already exists to avoid duplicates
     if (document.querySelector('.game-result-popup')) return;
     
-    // Create overlay
+    // Create overlay with extremely high z-index
     const overlay = document.createElement('div');
     overlay.className = 'game-result-popup loss';
+    overlay.style.zIndex = '99999';
     
     // Create popup content
     const popup = document.createElement('div');
     popup.className = 'game-result-popup-content';
     
     const titleEl = document.createElement('h1');
-    titleEl.textContent = 'YOU LOST';
+    titleEl.textContent = 'LOSER! Wach la3b b rjlik?';
     titleEl.className = 'game-result-title';
     
-    const messageEl = document.createElement('p');
-    messageEl.textContent = `${playerName}, you have been eliminated!`;
-    messageEl.className = 'game-result-message';
-    
     const button = document.createElement('button');
-    button.textContent = 'Reload Page';
+    button.textContent = 'Return to Home';
     button.className = 'game-result-button';
     button.addEventListener('click', () => {
+        // Explicitly remove modal from DOM before navigation
+        overlay.remove();
         window.location.reload();
     });
     
     popup.appendChild(titleEl);
-    popup.appendChild(messageEl);
     popup.appendChild(button);
     overlay.appendChild(popup);
     
@@ -45,31 +45,29 @@ function showWinPopup(playerName) {
     // Check if popup already exists to avoid duplicates
     if (document.querySelector('.game-result-popup')) return;
     
-    // Create overlay
+    // Create overlay with extremely high z-index
     const overlay = document.createElement('div');
     overlay.className = 'game-result-popup win';
+    overlay.style.zIndex = '99999';
     
     // Create popup content
     const popup = document.createElement('div');
     popup.className = 'game-result-popup-content';
     
     const titleEl = document.createElement('h1');
-    titleEl.textContent = 'YOU WON!';
+    titleEl.textContent = `${playerName.toUpperCase()} WON!`;
     titleEl.className = 'game-result-title';
     
-    const messageEl = document.createElement('p');
-    messageEl.textContent = `Congratulations ${playerName}, you are the last one standing!`;
-    messageEl.className = 'game-result-message';
-    
     const button = document.createElement('button');
-    button.textContent = 'Reload Page';
+    button.textContent = 'Return to Home';
     button.className = 'game-result-button';
     button.addEventListener('click', () => {
+        // Explicitly remove modal from DOM before navigation
+        overlay.remove();
         window.location.reload();
     });
     
     popup.appendChild(titleEl);
-    popup.appendChild(messageEl);
     popup.appendChild(button);
     overlay.appendChild(popup);
     
@@ -105,23 +103,26 @@ function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null)
     // 2. Destroy the player entity from the world (removes all components)
     world.destroyEntity(playerEntity);
     
-    // 3. Create an img element at the exact death location with heart image
-    const heartImg = document.createElement('img');
-    heartImg.className = 'extra-life-drop';
-    heartImg.src = '../../assets/images/hearts.png'; // Path to heart image (adjust as needed)
-    heartImg.style.position = 'absolute';
-    heartImg.style.left = `${deathGridX * tileSize}px`;
-    heartImg.style.top = `${deathGridY * tileSize}px`;
-    heartImg.style.width = `${tileSize}px`;
-    heartImg.style.height = `${tileSize}px`;
-    heartImg.style.zIndex = '5';
-    heartImg.style.objectFit = 'contain';
-    heartImg.style.animation = 'pulse 1s ease-in-out infinite';
+    // 3. Create a div with heart emoji at the exact death location
+    const heartDiv = document.createElement('div');
+    heartDiv.className = 'extra-life-drop';
+    heartDiv.textContent = '❤️';
+    heartDiv.style.position = 'absolute';
+    heartDiv.style.left = `${deathGridX * tileSize}px`;
+    heartDiv.style.top = `${deathGridY * tileSize}px`;
+    heartDiv.style.width = `${tileSize}px`;
+    heartDiv.style.height = `${tileSize}px`;
+    heartDiv.style.display = 'flex';
+    heartDiv.style.alignItems = 'center';
+    heartDiv.style.justifyContent = 'center';
+    heartDiv.style.fontSize = '32px';
+    heartDiv.style.zIndex = '5';
+    heartDiv.style.pointerEvents = 'none';
     
     // Append to the game container
     const gameContainer = container || document.getElementById('game-container');
     if (gameContainer) {
-        gameContainer.appendChild(heartImg);
+        gameContainer.appendChild(heartDiv);
     }
     
     console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Heart dropped.`);
@@ -206,13 +207,16 @@ export function checkGameEndConditions(world, localPlayerEntity, playerEntities,
         }
     }
     
+    // Get the local player's name for display in popups
+    const localPlayerName = getPlayerName();
+    
     // Check if local player is eliminated
     if (localPlayerEntity !== null) {
         const localPlayer = world.getComponent(localPlayerEntity, 'Player');
         if (localPlayer && (localPlayer.lives ?? 0) <= 0) {
             // Check if already showed loss popup
             if (!document.querySelector('.game-result-popup')) {
-                showLossPopup(localPlayer.id || 'Player');
+                showLossPopup(localPlayerName);
             }
         }
     }
@@ -224,7 +228,7 @@ export function checkGameEndConditions(world, localPlayerEntity, playerEntities,
             // Check if this is the local player
             if (localPlayerEntity !== null && lastActivePlayerEntity === localPlayerEntity) {
                 if (!document.querySelector('.game-result-popup')) {
-                    showWinPopup(lastPlayer.id || 'Player');
+                    showWinPopup(localPlayerName);
                 }
             }
         }
