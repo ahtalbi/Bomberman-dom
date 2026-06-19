@@ -2,38 +2,54 @@ import { getPlayerName } from '../game.js';
 
 /**
  * Creates a Loss pop-up modal for the eliminated player.
+ * Blocks their screen immediately so they cannot spectate.
  * @param {string} playerName - The name of the eliminated player
  */
 function showLossPopup(playerName) {
     // Check if popup already exists to avoid duplicates
     if (document.querySelector('.game-result-popup')) return;
     
-    // Create overlay with extremely high z-index
+    // Create overlay with extremely high z-index to block entire screen
     const overlay = document.createElement('div');
     overlay.className = 'game-result-popup loss';
     overlay.style.zIndex = '99999';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
     
     // Create popup content
     const popup = document.createElement('div');
     popup.className = 'game-result-popup-content';
     
     const titleEl = document.createElement('h1');
-    titleEl.textContent = 'LOSER! Wach la3b b rjlik?';
+    titleEl.textContent = 'You are terrible at this! Wach la3b b rjlik?';
     titleEl.className = 'game-result-title';
+    titleEl.style.color = '#ff4444';
+    titleEl.style.fontSize = '36px';
+    titleEl.style.marginBottom = '30px';
     
     const button = document.createElement('button');
-    button.textContent = 'Return to Home';
+    button.textContent = 'Restart';
     button.className = 'game-result-button';
+    button.style.padding = '15px 40px';
+    button.style.fontSize = '20px';
+    button.style.cursor = 'pointer';
     button.addEventListener('click', () => {
-        // Explicitly remove modal from DOM before navigation
-        overlay.remove();
-        window.location.reload();
+        // Force hard reset - send to initial page
+        window.location.href = '/';
     });
     
     popup.appendChild(titleEl);
     popup.appendChild(button);
     overlay.appendChild(popup);
     
+    // Append to document.body to block the entire screen immediately
     document.body.appendChild(overlay);
 }
 
@@ -62,9 +78,10 @@ function showWinPopup(playerName) {
     button.textContent = 'Return to Home';
     button.className = 'game-result-button';
     button.addEventListener('click', () => {
-        // Explicitly remove modal from DOM before navigation
+        // MUST remove modal from DOM first to prevent "ghost modal" bug
         overlay.remove();
-        window.location.reload();
+        // Force hard redirect to ensure clean slate and destroy any leftover DOM elements
+        window.location.href = '/';
     });
     
     popup.appendChild(titleEl);
@@ -167,15 +184,18 @@ export function checkExtraLifeCollision(world, tileSize = 64) {
             
             // Check for collision (same grid cell)
             if (playerGridX === dropGridX && playerGridY === dropGridY) {
-                // Increase player's lives by +1
-                player.lives = (player.lives ?? 0) + 1;
+                // Get current lives value, default to 0 if undefined
+                const currentLives = player.lives || 0;
                 
-                // Remove the extra-life-drop from DOM
+                // Increase player's lives by +1 (direct property assignment)
+                player.lives = currentLives + 1;
+                
+                // Remove the extra-life-drop from DOM immediately
                 if (drop.parentNode) {
                     drop.parentNode.removeChild(drop);
                 }
                 
-                console.log(`[Extra Life] Player ${player.id} picked up an extra life! Lives: ${player.lives}`);
+                console.log(`[Extra Life] Player ${player.id} picked up an extra life! New lives: ${player.lives}`);
                 
                 // Break out of the inner loop since this drop is now gone
                 break;
