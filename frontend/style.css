@@ -686,7 +686,7 @@ body.menu-page #root {
     100% { transform: translateY(-6px); }
 }
 
-/* Extra life drop - appears when a player dies */
+/* Extra life drop - heart image that appears when a player dies */
 .extra-life-drop {
     animation: pulse 1s ease-in-out infinite;
 }

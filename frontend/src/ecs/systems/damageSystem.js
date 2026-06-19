@@ -1,91 +1,32 @@
 /**
- * Handles player death transition when lives reach 0.
- * Removes the player's DOM element and spawns an extra-life drop at the death location.
- * 
- * @param {World} world - The game world instance
- * @param {number} playerEntity - The entity ID of the dying player
- * @param {number} tileSize - The size of each grid tile (default: 64)
+ * Creates a Loss pop-up modal for the eliminated player.
+ * @param {string} playerName - The name of the eliminated player
  */
-function handlePlayerDeath(world, playerEntity, tileSize = 64) {
-    // Get the player's components
-    const position = world.getComponent(playerEntity, 'Position');
-    const renderable = world.getComponent(playerEntity, 'Renderable');
-    const player = world.getComponent(playerEntity, 'Player');
-    
-    if (!position || !renderable || !player) return;
-    
-    // Store the grid coordinates where the player died
-    const deathGridX = Math.floor((position.x + tileSize / 2) / tileSize);
-    const deathGridY = Math.floor((position.y + tileSize / 2) / tileSize);
-    
-    // 1. Target and remove the player's DOM element
-    if (renderable.el && renderable.el.parentNode) {
-        renderable.el.parentNode.removeChild(renderable.el);
-    }
-    
-    // 2. Destroy the player entity from the world (removes all components)
-    world.destroyEntity(playerEntity);
-    
-    // 3. Create a new div at the exact death location with heart emoji
-    const extraLifeDiv = document.createElement('div');
-    extraLifeDiv.className = 'extra-life-drop';
-    extraLifeDiv.style.position = 'absolute';
-    extraLifeDiv.style.left = `${deathGridX * tileSize}px`;
-    extraLifeDiv.style.top = `${deathGridY * tileSize}px`;
-    extraLifeDiv.style.width = `${tileSize}px`;
-    extraLifeDiv.style.height = `${tileSize}px`;
-    extraLifeDiv.style.display = 'flex';
-    extraLifeDiv.style.alignItems = 'center';
-    extraLifeDiv.style.justifyContent = 'center';
-    extraLifeDiv.style.fontSize = '32px';
-    extraLifeDiv.style.zIndex = '5';
-    extraLifeDiv.style.pointerEvents = 'none';
-    extraLifeDiv.textContent = '❤️';
-    
-    // Append to the game container
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.appendChild(extraLifeDiv);
-    }
-    
-    // Optional: Add a subtle animation
-    extraLifeDiv.style.animation = 'pulse 1s ease-in-out infinite';
-    
-    console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Extra life dropped.`);
-}
-
-/**
- * Creates a Win/Loss pop-up overlay with a message and redirect button.
- * @param {string} title - The title text ("Win" or "Loss")
- * @param {string} message - The message to display
- * @param {string} type - 'win' or 'loss' for styling
- */
-function createGameOverPopup(title, message, type = 'loss') {
+function showLossPopup(playerName) {
     // Check if popup already exists to avoid duplicates
     if (document.querySelector('.game-result-popup')) return;
     
     // Create overlay
     const overlay = document.createElement('div');
-    overlay.className = 'game-result-popup';
-    overlay.classList.add(type);
+    overlay.className = 'game-result-popup loss';
     
     // Create popup content
     const popup = document.createElement('div');
     popup.className = 'game-result-popup-content';
     
     const titleEl = document.createElement('h1');
-    titleEl.textContent = title;
+    titleEl.textContent = 'YOU LOST';
     titleEl.className = 'game-result-title';
     
     const messageEl = document.createElement('p');
-    messageEl.textContent = message;
+    messageEl.textContent = `${playerName}, you have been eliminated!`;
     messageEl.className = 'game-result-message';
     
     const button = document.createElement('button');
-    button.textContent = 'Return to Home';
+    button.textContent = 'Reload Page';
     button.className = 'game-result-button';
     button.addEventListener('click', () => {
-        window.location.href = '/';
+        window.location.reload();
     });
     
     popup.appendChild(titleEl);
@@ -97,59 +38,93 @@ function createGameOverPopup(title, message, type = 'loss') {
 }
 
 /**
- * Checks for player deaths and game end conditions.
- * Shows Loss pop-up for eliminated players and Win pop-up for the last survivor.
+ * Creates a Win pop-up modal for the victorious player.
+ * @param {string} playerName - The name of the winning player
+ */
+function showWinPopup(playerName) {
+    // Check if popup already exists to avoid duplicates
+    if (document.querySelector('.game-result-popup')) return;
+    
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'game-result-popup win';
+    
+    // Create popup content
+    const popup = document.createElement('div');
+    popup.className = 'game-result-popup-content';
+    
+    const titleEl = document.createElement('h1');
+    titleEl.textContent = 'YOU WON!';
+    titleEl.className = 'game-result-title';
+    
+    const messageEl = document.createElement('p');
+    messageEl.textContent = `Congratulations ${playerName}, you are the last one standing!`;
+    messageEl.className = 'game-result-message';
+    
+    const button = document.createElement('button');
+    button.textContent = 'Reload Page';
+    button.className = 'game-result-button';
+    button.addEventListener('click', () => {
+        window.location.reload();
+    });
+    
+    popup.appendChild(titleEl);
+    popup.appendChild(messageEl);
+    popup.appendChild(button);
+    overlay.appendChild(popup);
+    
+    document.body.appendChild(overlay);
+}
+
+/**
+ * Handles player death transition when lives reach 0.
+ * Removes the player's DOM element and spawns an extra-life drop at the death location.
  * 
  * @param {World} world - The game world instance
- * @param {number} localPlayerEntity - The local player's entity ID
- * @param {Map} playerEntities - Map of player IDs to entity IDs
- * @param {number} totalPlayers - Total number of players at game start
+ * @param {number} playerEntity - The entity ID of the dying player
+ * @param {number} tileSize - The size of each grid tile (default: 64)
+ * @param {HTMLElement} container - The game container element
  */
-export function checkGameEndConditions(world, localPlayerEntity, playerEntities, totalPlayers) {
-    // Count active players (players with lives > 0)
-    const allPlayers = world.query('Position', 'Player');
-    let activePlayerCount = 0;
-    let lastActivePlayerEntity = null;
+function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null) {
+    // Get the player's components
+    const position = world.getComponent(playerEntity, 'Position');
+    const renderable = world.getComponent(playerEntity, 'Renderable');
+    const player = world.getComponent(playerEntity, 'Player');
     
-    for (const playerEntity of allPlayers) {
-        const player = world.getComponent(playerEntity, 'Player');
-        if (player && (player.lives ?? 0) > 0) {
-            activePlayerCount++;
-            lastActivePlayerEntity = playerEntity;
-        }
+    if (!position || !renderable || !player) return;
+    
+    // Store the grid coordinates where the player died
+    const deathGridX = Math.floor((position.x + tileSize / 2) / tileSize);
+    const deathGridY = Math.floor((position.y + tileSize / 2) / tileSize);
+    
+    // 1. Remove the player's DOM element entirely
+    if (renderable.el && renderable.el.parentNode) {
+        renderable.el.parentNode.removeChild(renderable.el);
     }
     
-    // Check if local player is eliminated
-    if (localPlayerEntity !== null) {
-        const localPlayer = world.getComponent(localPlayerEntity, 'Player');
-        if (localPlayer && (localPlayer.lives ?? 0) <= 0) {
-            // Check if already showed loss popup
-            if (!document.querySelector('.game-result-popup.game-result-popup-loss')) {
-                createGameOverPopup(
-                    'LOSS',
-                    'You have been eliminated. Better luck next time!',
-                    'loss'
-                );
-            }
-        }
+    // 2. Destroy the player entity from the world (removes all components)
+    world.destroyEntity(playerEntity);
+    
+    // 3. Create an img element at the exact death location with heart image
+    const heartImg = document.createElement('img');
+    heartImg.className = 'extra-life-drop';
+    heartImg.src = '../../assets/images/hearts.png'; // Path to heart image (adjust as needed)
+    heartImg.style.position = 'absolute';
+    heartImg.style.left = `${deathGridX * tileSize}px`;
+    heartImg.style.top = `${deathGridY * tileSize}px`;
+    heartImg.style.width = `${tileSize}px`;
+    heartImg.style.height = `${tileSize}px`;
+    heartImg.style.zIndex = '5';
+    heartImg.style.objectFit = 'contain';
+    heartImg.style.animation = 'pulse 1s ease-in-out infinite';
+    
+    // Append to the game container
+    const gameContainer = container || document.getElementById('game-container');
+    if (gameContainer) {
+        gameContainer.appendChild(heartImg);
     }
     
-    // Check win condition: only 1 player remains (and total was more than 1)
-    if (activePlayerCount === 1 && totalPlayers > 1 && lastActivePlayerEntity !== null) {
-        const lastPlayer = world.getComponent(lastActivePlayerEntity, 'Player');
-        if (lastPlayer) {
-            // Check if this is the local player
-            if (localPlayerEntity !== null && lastActivePlayerEntity === localPlayerEntity) {
-                if (!document.querySelector('.game-result-popup.game-result-popup-win')) {
-                    createGameOverPopup(
-                        'VICTORY!',
-                        'Congratulations! You are the last one standing!',
-                        'win'
-                    );
-                }
-            }
-        }
-    }
+    console.log(`[Player Death] Player ${player.id} died at (${deathGridX}, ${deathGridY}). Heart dropped.`);
 }
 
 /**
@@ -203,6 +178,54 @@ export function checkExtraLifeCollision(world, tileSize = 64) {
                 
                 // Break out of the inner loop since this drop is now gone
                 break;
+            }
+        }
+    }
+}
+
+/**
+ * Checks for player deaths and game end conditions.
+ * Shows Loss pop-up for eliminated players and Win pop-up for the last survivor.
+ * 
+ * @param {World} world - The game world instance
+ * @param {number} localPlayerEntity - The local player's entity ID
+ * @param {Map} playerEntities - Map of player IDs to entity IDs
+ * @param {number} totalPlayers - Total number of players at game start
+ */
+export function checkGameEndConditions(world, localPlayerEntity, playerEntities, totalPlayers) {
+    // Count active players (players with lives > 0)
+    const allPlayers = world.query('Position', 'Player');
+    let activePlayerCount = 0;
+    let lastActivePlayerEntity = null;
+    
+    for (const playerEntity of allPlayers) {
+        const player = world.getComponent(playerEntity, 'Player');
+        if (player && (player.lives ?? 0) > 0) {
+            activePlayerCount++;
+            lastActivePlayerEntity = playerEntity;
+        }
+    }
+    
+    // Check if local player is eliminated
+    if (localPlayerEntity !== null) {
+        const localPlayer = world.getComponent(localPlayerEntity, 'Player');
+        if (localPlayer && (localPlayer.lives ?? 0) <= 0) {
+            // Check if already showed loss popup
+            if (!document.querySelector('.game-result-popup')) {
+                showLossPopup(localPlayer.id || 'Player');
+            }
+        }
+    }
+    
+    // Check win condition: EXACTLY 1 active player remains on the board
+    if (activePlayerCount === 1 && totalPlayers > 1 && lastActivePlayerEntity !== null) {
+        const lastPlayer = world.getComponent(lastActivePlayerEntity, 'Player');
+        if (lastPlayer) {
+            // Check if this is the local player
+            if (localPlayerEntity !== null && lastActivePlayerEntity === localPlayerEntity) {
+                if (!document.querySelector('.game-result-popup')) {
+                    showWinPopup(lastPlayer.id || 'Player');
+                }
             }
         }
     }
