@@ -28,15 +28,7 @@ export function powerUpSystem(world, onPowerUpPicked) {
                     player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
                 }
                 else if (pUp.type === 'HEART') {
-                    // ========== CRITICAL HEART PICKUP LOGIC ==========
-                    // Step 1: Get current lives from THIS player (not from heart entity!)
-                    const currentLives = player.lives || 0;
-
-                    // Step 2: Forcefully increment by 1 (simple addition, no other logic)
-                    const newLives = currentLives + 1;
-                    player.lives = newLives;
-
-                    console.log(`[HEART PICKUP] Player ${player.id} gained a life: ${currentLives} → ${newLives}`);
+                    player.lives += 1;
                 }
 
                 // Remove the power-up's DOM element from the screen

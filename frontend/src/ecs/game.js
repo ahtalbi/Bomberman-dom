@@ -352,18 +352,24 @@ export class GameEngine {
 
             if (this.localPlayerEntity === null) return;
 
-            const player = this.world.getComponent(this.localPlayerEntity, 'Player');
-            // Update HUD for local player when they pick up ANY power-up (including HEART)
-            if (player && player.id === id) {
-                this.updateHudStats(this.localPlayerEntity);
+            const entity = this.playerEntities.get(String(id));
+            const playerComp = entity ? this.world.getComponent(entity, 'Player') : null;
+
+            if (type === 'HEART') {
+                if (playerComp && entity === this.localPlayerEntity) {
+                    setLives(playerComp.lives);
+                }
+            } else {
+                if (playerComp && entity === this.localPlayerEntity) {
+                    this.updateHudStats(this.localPlayerEntity);
+                }
             }
 
-            // Notify server for sync across all clients
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.send(JSON.stringify({
                     type: type === 'HEART' ? 'ITEM_PICKUP' : 'POWERUP_PICKED',
                     payload: type === 'HEART'
-                        ? { playerId: id, newLives: player?.lives, x, y }
+                        ? { playerId: id, newLives: playerComp ? playerComp.lives : 0, x, y }
                         : { id, type, x, y }
                 }));
             }
