@@ -6,8 +6,14 @@ export default function WinMenu(props) {
     const replayBtn = <button class="replay-button">Play Again</button>;
 
     replayBtn.addEventListener("click", () => {
-        // This hard reload is a reliable way to reset the game state and return to the start.
-        location.reload();
+        // Explicitly close the old WebSocket to prevent zombie connections
+        if (window.socket) { 
+            window.socket.close(); 
+            window.socket = null; 
+        }
+
+        // Hard reload to wipe JS memory and start from a clean slate
+        window.location.href = '/';
     });
 
     return (

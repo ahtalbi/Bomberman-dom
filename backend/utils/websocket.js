@@ -70,6 +70,8 @@ export function handleWebsocket(message, ws) {
                 // Only trigger game_won if exactly 1 player remains alive
                 if (alivePlayersCount === 1) {
                     room.checkAndDeclareWinner();
+                    // Explicitly delete the room so ghost players don't persist
+                    roomsHandler.Rooms.delete(room.id);
                 }
             } else if (room && player?.socketId) {
                 // Duplicate event detected - ignore it silently but log for debugging

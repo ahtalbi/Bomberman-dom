@@ -49,7 +49,8 @@ class RoomsHandler {
         for (const [roomId, room] of this.Rooms) {
             if (!room.removePlayer(ws)) continue;
             
-            if (room.length === 0) {
+            // Delete the room if it's empty, OR if the game ended (<= 1 alive player)
+            if (room.length === 0 || (room.inGame && room.getAlivePlayersCount() <= 1)) {
                 this.Rooms.delete(roomId);
             }
             break;
