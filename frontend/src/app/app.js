@@ -12,7 +12,7 @@ import { setMessages } from "../components/chat";
 import { GameEngine } from "../ecs/game.js"; 
 
 const root = document.getElementById("root");
-const wss = new WebSocket("ws://localhost:5000");
+const wss = new WebSocket(`ws://${window.location.hostname}:5000`);
 const sound = new Sound("./assets/sounds/background_music.mp3");
 let currentGameEngine = null;
 
