@@ -257,16 +257,22 @@ export class GameEngine {
     handleRemoteItemPickup(payload) {
         if (!payload || !payload.playerId || payload.newLives === undefined) return;
 
+        // 4. Ensure we destroy the heart entity from the remote clients' screens
+        if (payload.x !== undefined && payload.y !== undefined) {
+            this.removePowerUpAt(payload.x, payload.y);
+        }
+
+        // 1. Find the player entity using the payload's playerId
         const entity = this.playerEntities.get(String(payload.playerId));
         if (entity === undefined) return;
 
         const player = this.world.getComponent(entity, 'Player');
         if (!player) return;
 
-        // Update the player's lives
+        // 2. Do NOT add +1. Strictly SET the state using the payload
         player.lives = payload.newLives;
 
-        // Update HUD if this is the local player
+        // 3. Update the HUD/UI explicitly with message.payload.newLives
         if (entity === this.localPlayerEntity) {
             this.updateHudStats(entity);
         }
