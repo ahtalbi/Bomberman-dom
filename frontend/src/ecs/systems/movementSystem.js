@@ -10,11 +10,15 @@ export function movementSystem(world, dt, now, mapData, tileSize = 40) {
         const input = world.getComponent(entity, 'Input');
         const behavior = world.getComponent(entity, 'Behavior');
 
-        if (behavior) {
-            vel.speed = vel.baseSpeed + (behavior.fastShoesLevel - 1) * 0.5;
+        if (vel.speedBoostTimeRemaining > 0) {
+            vel.speedBoostTimeRemaining = Math.max(vel.speedBoostTimeRemaining - dt, 0);
         } else {
-            vel.speed = vel.baseSpeed;
+            vel.speedBoost = 0;
         }
+
+        const timedBoost = vel.speedBoostTimeRemaining > 0 ? vel.speedBoost || 0 : 0;
+        const behaviorBoost = behavior ? (behavior.fastShoesLevel - 1) * 0.5 : 0;
+        vel.speed = vel.baseSpeed + timedBoost + behaviorBoost;
 
         if (!input) {
             moveTowardTarget(pos, vel, delta);
