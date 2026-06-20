@@ -14,7 +14,11 @@ function ChatPlayers() {
 
         for (let msg of msgs) {
             const p = document.createElement("p");
-            p.textContent = msg;
+            if (typeof msg === "string") {
+                p.textContent = msg;
+            } else {
+                p.textContent = `${msg.nickname}: ${msg.message}`;
+            }
             messagesContainer.appendChild(p);
             if (messagesContainer.children.length > 20) {
                 messagesContainer.removeChild(messagesContainer.firstElementChild);

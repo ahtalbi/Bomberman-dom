@@ -23,8 +23,9 @@ export function handleWebsocket(message, ws) {
                 return;
             }
 
-            if (message.message && message.length > 20) {
+            if (message.message.length > 20) {
                 sendError(ws, "Can't send the message its too long");
+                return;
             }
 
             roomsHandler.broadcastMessage(message.message, ws);

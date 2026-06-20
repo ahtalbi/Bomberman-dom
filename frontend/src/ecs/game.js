@@ -13,9 +13,10 @@ import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
 import { damageSystem } from './systems/damageSystem.js';
 import { applySpeedPowerUp, powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
-import { setBombs, setLives, setRange, setSpeed } from '../pages/game';
+import { setBombs, setLives, setRange, setSpeed, TILE_SIZE } from '../pages/game';
 
-const TILE_SIZE = 64;
+const SPRITE_COLUMNS = 13;
+const SPRITE_ROWS = 54;
 const ANIMATION_ROWS = {
     RUN: { up: 38, left: 39, down: 40, right: 41 },
     IDLE: { up: 22, left: 23, down: 24, right: 25 }
@@ -49,6 +50,9 @@ export class GameEngine {
             playerDiv.style.position = 'absolute';
             playerDiv.style.zIndex = '10';
             playerDiv.style.willChange = 'transform';
+            playerDiv.style.width = `${TILE_SIZE}px`;
+            playerDiv.style.height = `${TILE_SIZE}px`;
+            playerDiv.style.backgroundSize = `${SPRITE_COLUMNS * TILE_SIZE}px ${SPRITE_ROWS * TILE_SIZE}px`;
             this.container.appendChild(playerDiv);
 
             const sx = pData.x || 1;
@@ -56,7 +60,7 @@ export class GameEngine {
 
             this.world.addComponent(playerEntity, 'Position', PositionComponent(sx, sy, TILE_SIZE));
             this.world.addComponent(playerEntity, 'Velocity', VelocityComponent(2.5));
-            this.world.addComponent(playerEntity, 'Renderable', RenderableComponent(playerDiv, 64, 64, 4, 12)
+            this.world.addComponent(playerEntity, 'Renderable', RenderableComponent(playerDiv, TILE_SIZE, TILE_SIZE, 4, 12)
             );
 
             const isLocal = playerId === normalizedLocalPlayerId;
@@ -168,6 +172,8 @@ export class GameEngine {
         const bombDiv = document.createElement('div');
         bombDiv.className = 'bomb';
         bombDiv.style.position = 'absolute';
+        bombDiv.style.width = `${TILE_SIZE}px`;
+        bombDiv.style.height = `${TILE_SIZE}px`;
         bombDiv.style.left = `${gridX * TILE_SIZE}px`;
         bombDiv.style.top = `${gridY * TILE_SIZE}px`;
         bombDiv.style.zIndex = '6';

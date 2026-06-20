@@ -79,7 +79,10 @@ wss.addEventListener("message", (event) => {
             break;
             
         case "chat_message":
-            setMessages(prev => [...prev ,message.message]);
+            setMessages(prev => [...prev, {
+                nickname: message.nickname || "Player",
+                message: message.message,
+            }]);
             break;
         case "player_moved":
             if (currentGameEngine) {

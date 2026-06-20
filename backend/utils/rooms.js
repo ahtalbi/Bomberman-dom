@@ -60,7 +60,8 @@ class RoomsHandler {
         for (let [_, room] of this.Rooms) {
             for (let player of room.players) {
                 if (player.ws === ws) {
-                    room.broadcastMessage(message);
+                    room.broadcastMessage(player.nickname, message);
+                    return;
                 }
             }
         }
@@ -206,9 +207,10 @@ class Room {
         }, 1000);
     }
 
-    broadcastMessage(message) {
+    broadcastMessage(nickname, message) {
         this.broadcast({
             type: "chat_message",
+            nickname: nickname,
             message: message,
         });
     }
