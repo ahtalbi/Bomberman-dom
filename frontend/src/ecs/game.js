@@ -11,7 +11,7 @@ import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
 import { damageSystem, checkGameEndConditions, spawnHeartPowerUp } from './systems/damageSystem.js';
-import WinMenu from '../pages/WinMenu.jsx';
+import Menu from '../pages/menu.jsx';
 import { render } from '../../mini-framework/dom.js';
 
 import { powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
@@ -166,7 +166,7 @@ export class GameEngine {
 
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({
-                type: 'DROP_BOMB',
+                type: 'drop_bomb',
                 payload: { id: player.id, x: pos.gridX, y: pos.gridY, range: player.bombRange }
             }));
         }
@@ -245,39 +245,25 @@ export class GameEngine {
         this.removePowerUpAt(payload.x, payload.y);
 
         const entity = this.playerEntities.get(String(payload.id));
-        if (entity === undefined || entity === this.localPlayerEntity) return;
-
-        this.applyPowerUp(entity, payload.type);
-    }
-
-    /**
-     * Handles remote heart pickup - updates player lives and UI on all clients
-     * @param {Object} payload - { playerId, newLives }
-     */
-    handleRemoteItemPickup(payload) {
-        if (!payload || !payload.playerId || payload.newLives === undefined) return;
-
-        // 4. Ensure we destroy the heart entity from the remote clients' screens
-        if (payload.x !== undefined && payload.y !== undefined) {
-            this.removePowerUpAt(payload.x, payload.y);
-        }
-
-        // 1. Find the player entity using the payload's playerId
-        const entity = this.playerEntities.get(String(payload.playerId));
         if (entity === undefined) return;
 
-        const player = this.world.getComponent(entity, 'Player');
-        if (!player) return;
+        if (payload.type === 'HEART') {
+            const player = this.world.getComponent(entity, 'Player');
+            if (!player || payload.newLives === undefined) return;
 
-        // 2. Do NOT add +1. Strictly SET the state using the payload
-        player.lives = payload.newLives;
+            player.lives = payload.newLives;
 
-        // 3. Update the HUD/UI explicitly with message.payload.newLives
-        if (entity === this.localPlayerEntity) {
-            this.updateHudStats(entity);
+            if (entity === this.localPlayerEntity) {
+                this.updateHudStats(entity);
+            }
+
+            console.log(`[Remote PowerUp Pickup] Player ${payload.id} picked up heart. New lives: ${payload.newLives}`);
+            return;
         }
 
-        console.log(`[Remote Item Pickup] Player ${payload.playerId} picked up heart. New lives: ${payload.newLives}`);
+        if (entity === this.localPlayerEntity) return;
+
+        this.applyPowerUp(entity, payload.type);
     }
 
     removePowerUpAt(gridX, gridY) {
@@ -373,10 +359,14 @@ export class GameEngine {
 
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.send(JSON.stringify({
-                    type: type === 'HEART' ? 'ITEM_PICKUP' : 'POWERUP_PICKED',
-                    payload: type === 'HEART'
-                        ? { playerId: id, newLives: playerComp ? playerComp.lives : 0, x, y }
-                        : { id, type, x, y }
+                    type: 'powerup_picked',
+                    payload: {
+                        id,
+                        type,
+                        x,
+                        y,
+                        ...(type === 'HEART' ? { newLives: playerComp ? playerComp.lives : 0 } : {})
+                    }
                 }));
             }
         };
@@ -386,7 +376,7 @@ export class GameEngine {
             if (!player || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
             this.socket.send(JSON.stringify({
-                type: 'MOVE_STATE',
+                type: 'move_state',
                 payload: {
                     id: player.id,
                     x,
@@ -424,7 +414,13 @@ export class GameEngine {
 
         const root = document.getElementById('root');
         document.body.className = 'menu-page';
-        render(<WinMenu winnerName={winnerName} />, root);
+        render(
+            <Menu
+                title={`${(winnerName || "A Player").toUpperCase()} WON!`}
+                message="The last player standing takes the crown."
+            />,
+            root
+        );
     }
 
     /**
@@ -432,6 +428,19 @@ export class GameEngine {
      * Prevents the "Loop Trap" - modal is only rendered ONCE when lives reach 0.
      * Also disables input immediately when player dies.
      */
+
+    removeRemotePlayer(playerId) {
+        const entity = this.playerEntities.get(String(playerId));
+        if (entity === undefined) return;
+
+        const renderable = this.world.getComponent(entity, 'Renderable');
+        if (renderable && renderable.el && renderable.el.parentNode) {
+            renderable.el.parentNode.removeChild(renderable.el);
+        }
+
+        this.world.destroyEntity(entity);
+        this.playerEntities.delete(String(playerId));
+    }
 
     destroy() {
         this.running = false;

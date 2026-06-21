@@ -1,19 +1,21 @@
 import { createElement } from "../../mini-framework/dom";
 
-const replayBtn = <button class="replay-button">Play Again</button>;
+export default function Menu({
+        title = "You Win!",
+        message = "All other players have left the game.",
+        buttonText = "Play Again",
+    } = {}) {
+    const replayBtn = <button class="replay-button">{buttonText}</button>;
 
-replayBtn.addEventListener("click", () => {
-    location.reload();
-});
+    replayBtn.addEventListener("click", () => {
+        window.location.href = "/";
+    });
 
-let menuEl = (
-    <div class="menu-box">
-        <h1>You Win!</h1>
-        <p>All other players have left the game.</p>
-        {replayBtn}
-    </div>
-);
-
-export default function Menu() {
-    return menuEl;
+    return (
+        <div class="menu-box">
+            <h1>{title}</h1>
+            <p>{message}</p>
+            {replayBtn}
+        </div>
+    );
 }

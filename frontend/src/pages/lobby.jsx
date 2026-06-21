@@ -26,7 +26,7 @@ createEffect(() => {
 
 function Lobby() {
     return (
-        <div class="conatiner-lobby">
+        <div class="container-lobby">
             <div class="lobby-box">
                 <h1>Lobby</h1>
                 {roomIdEl}

@@ -1,10 +1,12 @@
-import RoomsHandler from "./rooms.js";
+import RoomsHandler from "./rooms_handler.js";
 
 let roomsHandler = new RoomsHandler();
 
 export function handleWebsocket(message, ws) {
     switch (message.type) {
+        // this case is for register the player
         case "nickname_of_the_player":
+
             if (!message.nickname) {
                 sendError(ws, "Nickname is required");
                 return;
@@ -17,7 +19,10 @@ export function handleWebsocket(message, ws) {
 
             roomsHandler.addPlayerToRoom(message.nickname, ws);
             break;
+
+        // this case to send a message
         case "chat_message":
+
             if (!message.message) {
                 sendError(ws, "Can't send empty message");
                 return;
@@ -29,54 +34,36 @@ export function handleWebsocket(message, ws) {
 
             roomsHandler.broadcastMessage(message.message, ws);
             break;
-        case "MOVE_STATE":
+
+        // this case to move the player
+        case "move_state":
+
             roomsHandler.broadcastGameMessage(ws, {
                 type: "player_moved",
                 payload: message.payload,
             });
             break;
-        case "DROP_BOMB":
+
+        // this case to drop a bomb
+        case "drop_bomb":
+
             roomsHandler.broadcastGameMessage(ws, {
                 type: "bomb_dropped",
                 payload: message.payload,
             });
             break;
-        case "POWERUP_PICKED":
+        
+        // this case when you picked up a power up or heart
+        case "powerup_picked":
+
             roomsHandler.broadcastGameMessage(ws, {
                 type: "powerup_picked",
                 payload: message.payload,
             });
             break;
-        case "ITEM_PICKUP":
-            // Broadcast heart pickup to all players so they can update lives
-            roomsHandler.broadcastGameMessage(ws, {
-                type: "item_picked",
-                payload: message.payload,
-            });
-            break;
+        
         case "player_died":
-            const room = roomsHandler.getRoomBySocket(ws);
-            const player = room ? room.players.find(p => p.ws === ws) : null;
-
-            // **DUPLICATE GUARD (THE FILTER)**: Check if this is a new death event
-            if (room && room.inGame && !room.deadPlayers.has(player?.socketId)) {
-                // Valid, new death event - process it
-                room.deadPlayers.add(player.socketId);
-
-                const alivePlayersCount = room.players.length - room.deadPlayers.size;
-                console.log(`[DEBUG - Math] ${player.nickname} died. Alive remaining: ${alivePlayersCount}`);
-                console.log(`[Game Event] Player ${player.nickname} (ID: ${player.id}) was eliminated in room ${room.id}.`);
-
-                // Only trigger game_won if exactly 1 player remains alive
-                if (alivePlayersCount === 1) {
-                    room.checkAndDeclareWinner();
-                    // Explicitly delete the room so ghost players don't persist
-                    roomsHandler.Rooms.delete(room.id);
-                }
-            } else if (room && player?.socketId) {
-                // Duplicate event detected - ignore it silently but log for debugging
-                console.log(`[DEBUG] Ignored duplicate death event from: ${player.socketId}`);
-            }
+            roomsHandler.handlePlayerDeath(ws);
             break;
     }
 }

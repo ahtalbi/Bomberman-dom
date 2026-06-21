@@ -24,7 +24,7 @@ function Register({ wss }) {
 
     return (
         <form class="register-form" onSubmit={playerEnter}>
-            <input class="nickname-input" type="text" name="nickname" placeholder="enter your name" maxlength="20"/>
+            <input class="nickname-input" type="text" name="nickname" placeholder="enter your name" maxlength="20" />
             <button class="register-button" type="submit">start playing</button>
         </form>
     )
