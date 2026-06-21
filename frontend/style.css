@@ -91,6 +91,23 @@ body.game-page::before {
     transform: translateY(70px);
 }
 
+.register-error:empty {
+    display: none;
+}
+
+.register-error {
+    color: #ff4d4d;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-align: center;
+    background: rgba(255, 77, 77, 0.1);
+    padding: 8px;
+    border: 1px solid rgba(255, 77, 77, 0.3);
+}
+
 body.register-page #root {
     position: relative;
     z-index: 1;

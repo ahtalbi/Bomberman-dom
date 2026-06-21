@@ -16,12 +16,17 @@ class RoomsHandler {
     addPlayerToRoom(nickname, ws) {
         const existingRoom = this.getRoomBySocket(ws);
         if (existingRoom) {
+            // Check if another player in this room has the same nickname
+            if (existingRoom.players.some(player => player.nickname === nickname && player.ws !== ws)) {
+                return "Nickname already taken in this room";
+            }
+
             const existingPlayer = existingRoom.players.find(player => player.ws === ws);
             if (existingPlayer) {
                 existingPlayer.nickname = nickname;
             }
             existingRoom.broadcastRoomUpdate();
-            return;
+            return null;
         }
 
         const lastKey = [...this.Rooms.keys()].at(-1);
@@ -29,11 +34,16 @@ class RoomsHandler {
         const player = new Player(nickname, ws);
 
         if (lastRoom && lastRoom.length < 4 && !lastRoom.inGame) {
+            // Check if nickname taken in the last room
+            if (lastRoom.players.some(p => p.nickname === nickname)) {
+                return "Nickname already taken in this room";
+            }
             lastRoom.addPlayer(player);
         } else {
             this.addRoom();
             this.Rooms.get([...this.Rooms.keys()].at(-1)).addPlayer(player);
         }
+        return null;
     }
 
     getRoomBySocket(ws) {

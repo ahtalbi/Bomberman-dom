@@ -1,6 +1,6 @@
 import { createElement, render } from "../../mini-framework/dom";
 import router from "../../mini-framework/mini-framework";
-import Register from "../pages/register";
+import Register, { setError } from "../pages/register";
 import Game from "../pages/game";
 import Menu from "../pages/menu";
 import Lobby from "../pages/lobby";
@@ -97,6 +97,13 @@ wss.addEventListener("message", (event) => {
         case "powerup_picked":
             if (currentGameEngine) {
                 currentGameEngine.handleRemotePowerUpPicked(message.payload);
+            }
+            break;
+        case "error":
+            if (document.body.className === "register-page") {
+                setError(message.message);
+            } else {
+                alert(message.message);
             }
             break;
     }
