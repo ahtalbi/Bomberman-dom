@@ -14,6 +14,7 @@ class RoomsHandler {
     }
 
     addPlayerToRoom(nickname, ws) {
+        nickname = nickname.trim().toLowerCase();
         if (this.getRoomBySocket(ws)) return null;
 
         const lastKey = [...this.Rooms.keys()].at(-1);
