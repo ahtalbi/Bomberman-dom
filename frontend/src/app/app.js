@@ -102,7 +102,8 @@ wss.addEventListener("message", (event) => {
                 currentGameEngine.destroy();
             }
             document.body.className = "menu-page";
-            render(<WinMenu winnerName={message.winnerName} />, root);
+            root.innerHTML = '';
+            root.appendChild(WinMenu({ winnerName: message.winnerName }));
             break;
 
         case "player_turned_heart":

@@ -49,8 +49,8 @@ class RoomsHandler {
         for (const [roomId, room] of this.Rooms) {
             if (!room.removePlayer(ws)) continue;
             
-            // Delete the room if it's empty, OR if the game ended (<= 1 alive player)
-            if (room.length === 0 || (room.inGame && room.getAlivePlayersCount() <= 1)) {
+            // Only delete the room when ALL connected players have left
+            if (room.length === 0) {
                 this.Rooms.delete(roomId);
             }
             break;
@@ -171,9 +171,8 @@ class Room {
         }
 
         if (this.inGame && !this.inLobby) {
-            // Mark the disconnected player as "dead" if not already marked
+            // Mark the disconnected player as "dead" and check win condition
             this.checkWinCondition(disconnectedSocketId);
-            return true;
             return true;
         }
 
@@ -189,7 +188,9 @@ class Room {
     }
 
     getAlivePlayersCount() {
-        return this.players.length - this.deadPlayers.size;
+        // Use initialPlayerCount (the snapshot count) to avoid double-counting
+        // disconnected players who were both spliced from this.players AND added to deadPlayers
+        return this.initialPlayerCount - this.deadPlayers.size;
     }
 
     checkWinCondition(deadSocketId) {
