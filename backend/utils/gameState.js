@@ -2,8 +2,12 @@ const TILE_SIZE = 48;
 const STARTING_LIVES = 3;
 const BOMB_TIMER = 2000;
 const INVINCIBLE_TIME = 1500;
+const PLAYER_SIZE = TILE_SIZE;
 const MAX_SPEED = 8;
-const MOVE_TOLERANCE = 140;
+const INPUT_RATE = 30;
+const INPUT_BURST = 8;
+const INPUT_MUTE_TIME = 1000;
+const SNAP_THRESHOLD = 32;
 
 export function createPlayerState(player, start, color) {
     return {
@@ -24,6 +28,10 @@ export function createPlayerState(player, start, color) {
         bombRange: 2,
         speed: 2.5,
         lastMoveAt: Date.now(),
+        inputDirection: null,
+        inputTokens: INPUT_BURST,
+        lastInputAt: 0,
+        inputMutedUntil: 0,
     };
 }
 
@@ -65,36 +73,119 @@ export function publicStats(state) {
     };
 }
 
-export function acceptMovement(state, payload, map) {
-    if (!state || !state.alive || !payload) return false;
-
-    const x = Number(payload.x);
-    const y = Number(payload.y);
-    const gridX = Number(payload.gridX);
-    const gridY = Number(payload.gridY);
-
-    if (![x, y, gridX, gridY].every(Number.isFinite)) return false;
-    if (!canStandOn(map, gridX, gridY)) return false;
-
+export function canReadInput(state) {
     const now = Date.now();
-    const elapsed = Math.max(now - state.lastMoveAt, 16);
-    const maxDistance = (MAX_SPEED * elapsed / 16.67) + MOVE_TOLERANCE;
-    const distance = Math.hypot(x - state.x, y - state.y);
+    if (state.inputMutedUntil > now) return false;
 
-    if (distance > maxDistance) {
-        state.lastMoveAt = now;
+    const elapsed = Math.max(now - state.lastInputAt, 0);
+    state.lastInputAt = now;
+    state.inputTokens = Math.min(
+        INPUT_BURST,
+        state.inputTokens + (elapsed / 1000) * INPUT_RATE
+    );
+
+    if (state.inputTokens < 1) {
+        state.inputMutedUntil = now + INPUT_MUTE_TIME;
         return false;
     }
 
-    state.x = x;
-    state.y = y;
-    state.gridX = gridX;
-    state.gridY = gridY;
-    state.direction = sanitizeDirection(payload.direction, state.direction);
-    state.isMoving = Boolean(payload.isMoving);
-    state.lastMoveAt = now;
-
+    state.inputTokens -= 1;
     return true;
+}
+
+export function updatePlayerInput(state, payload) {
+    if (!state || !state.alive || !payload) return false;
+
+    const direction = sanitizeDirection(payload.direction, null);
+    const nextDirection = payload.isMoving && direction ? direction : null;
+
+    if (state.inputDirection === nextDirection) return false;
+
+    state.inputDirection = nextDirection;
+    return true;
+}
+
+export function updateMovement(state, map, dt) {
+    if (!state || !state.alive) return false;
+
+    const previous = {
+        x: state.x,
+        y: state.y,
+        gridX: state.gridX,
+        gridY: state.gridY,
+        direction: state.direction,
+        isMoving: state.isMoving,
+    };
+
+    let dx = 0;
+    let dy = 0;
+
+    if (state.inputDirection === "up") dy = -1;
+    if (state.inputDirection === "down") dy = 1;
+    if (state.inputDirection === "left") dx = -1;
+    if (state.inputDirection === "right") dx = 1;
+
+    state.isMoving = dx !== 0 || dy !== 0;
+
+    if (state.isMoving) {
+        state.direction = state.inputDirection;
+    }
+
+    const delta = Math.min(dt, 50) / 16.67;
+    const speed = Math.min(state.speed, MAX_SPEED);
+
+    const nextX = state.x + dx * speed * delta;
+    const nextY = state.y + dy * speed * delta;
+
+    if (dy !== 0 && dx === 0) {
+        if (isBlocked(state.x, nextY, map)) {
+            const currentTileX = Math.floor((state.x + PLAYER_SIZE / 2) / TILE_SIZE);
+            const targetX = currentTileX * TILE_SIZE;
+            const diffX = state.x - targetX;
+
+            if (Math.abs(diffX) < SNAP_THRESHOLD) {
+                dy = 0;
+                dx = -Math.sign(diffX);
+            }
+        }
+    }
+
+    if (dx !== 0 && dy === 0) {
+        if (isBlocked(nextX, state.y, map)) {
+            const currentTileY = Math.floor((state.y + PLAYER_SIZE / 2) / TILE_SIZE);
+            const targetY = currentTileY * TILE_SIZE;
+            const diffY = state.y - targetY;
+
+            if (Math.abs(diffY) < SNAP_THRESHOLD) {
+                dx = 0;
+                dy = -Math.sign(diffY);
+            }
+        }
+    }
+
+    const nextXAfterSnap = state.x + dx * speed * delta;
+    const nextYAfterSnap = state.y + dy * speed * delta;
+
+    if (dx !== 0 && !isBlocked(nextXAfterSnap, state.y, map)) {
+        state.x = nextXAfterSnap;
+    }
+
+    if (dy !== 0 && !isBlocked(state.x, nextYAfterSnap, map)) {
+        state.y = nextYAfterSnap;
+    }
+
+    state.gridX = Math.floor((state.x + PLAYER_SIZE / 2) / TILE_SIZE);
+    state.gridY = Math.floor((state.y + PLAYER_SIZE / 2) / TILE_SIZE);
+    state.lastMoveAt = Date.now();
+
+    return (
+        Math.abs(previous.x - state.x) > 0.1 ||
+        Math.abs(previous.y - state.y) > 0.1 ||
+        previous.gridX !== state.gridX ||
+        previous.gridY !== state.gridY ||
+        previous.direction !== state.direction ||
+        previous.isMoving !== state.isMoving
+    );
 }
 
 export function applyPowerUp(state, type) {
@@ -182,6 +273,21 @@ export function sameCell(a, b) {
 function canStandOn(map, x, y) {
     const cell = map[y] && map[y][x];
     return cell === 0 || cell === 2;
+}
+
+function isBlocked(x, y, map) {
+    const padding = 4;
+    const left = Math.floor((x + padding) / TILE_SIZE);
+    const right = Math.floor((x + PLAYER_SIZE - padding) / TILE_SIZE);
+    const top = Math.floor((y + padding) / TILE_SIZE);
+    const bottom = Math.floor((y + PLAYER_SIZE - padding) / TILE_SIZE);
+
+    return (
+        !canStandOn(map, left, top) ||
+        !canStandOn(map, right, top) ||
+        !canStandOn(map, left, bottom) ||
+        !canStandOn(map, right, bottom)
+    );
 }
 
 function sanitizeDirection(direction, fallback) {

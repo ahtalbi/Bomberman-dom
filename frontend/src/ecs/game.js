@@ -8,10 +8,7 @@ import {
     BombComponent
 } from './components.js';
 
-import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
-import { bombSystem } from './systems/bombSystem.js';
-import { applySpeedPowerUp, powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
 import { setBombs, setLives, setRange, setSpeed, TILE_SIZE } from '../pages/game';
 
 const SPRITE_COLUMNS = 13;
@@ -34,6 +31,7 @@ export class GameEngine {
         this.animationFrame = null;
         this.running = false;
         this.claimedPowerUps = new Set();
+        this.lastInputSent = "";
     }
 
     init(localPlayerId, allPlayers) {
@@ -58,7 +56,7 @@ export class GameEngine {
             const sy = pData.y || 1;
 
             this.world.addComponent(playerEntity, 'Position', PositionComponent(sx, sy, TILE_SIZE));
-            this.world.addComponent(playerEntity, 'Velocity', VelocityComponent(2.5));
+            this.world.addComponent(playerEntity, 'Velocity', VelocityComponent(pData.speed || 2.5));
             this.world.addComponent(playerEntity, 'Renderable', RenderableComponent(playerDiv, TILE_SIZE, TILE_SIZE, 4, 12)
             );
 
@@ -112,6 +110,7 @@ export class GameEngine {
                 if (!input.inputQueue.includes(dir)) {
                     input.inputQueue.unshift(dir);
                 }
+                this.sendInput(input);
             }
 
             if (e.key === ' ' || e.code === 'Space') {
@@ -124,6 +123,7 @@ export class GameEngine {
             const dir = getKeyDirection(e.key);
             if (dir && input) {
                 input.inputQueue = input.inputQueue.filter(d => d !== dir);
+                this.sendInput(input);
             }
         };
 
@@ -136,10 +136,31 @@ export class GameEngine {
         };
     }
 
+    sendInput(input) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        if (this.localPlayerEntity === null) return;
+
+        const player = this.world.getComponent(this.localPlayerEntity, 'Player');
+        if (!player || !player.alive) return;
+
+        const direction = input.inputQueue[0] || null;
+        const isMoving = Boolean(direction);
+        const inputState = `${direction || 'idle'}:${isMoving ? 1 : 0}`;
+
+        if (this.lastInputSent === inputState) return;
+        this.lastInputSent = inputState;
+
+        this.socket.send(JSON.stringify({
+            type: 'MOVE_STATE',
+            payload: { direction, isMoving }
+        }));
+    }
+
     dropBomb() {
         if (this.localPlayerEntity === null) return;
 
         const player = this.world.getComponent(this.localPlayerEntity, 'Player');
+        if (!player || !player.alive) return;
 
         const currentBombs = this.world.query('Position', 'Bomb').filter(bEntity => {
             return this.world.getComponent(bEntity, 'Bomb').ownerId === player.id;
@@ -197,10 +218,6 @@ export class GameEngine {
             return;
         }
 
-        if (entity === this.localPlayerEntity && !payload.corrected) {
-            return;
-        }
-
         const pos = this.world.getComponent(entity, 'Position');
         const vel = this.world.getComponent(entity, 'Velocity');
         const renderable = this.world.getComponent(entity, 'Renderable');
@@ -216,11 +233,8 @@ export class GameEngine {
         pos.gridY = payload.gridY;
         pos.targetX = payload.x;
         pos.targetY = payload.y;
-
-        if (payload.corrected) {
-            pos.x = payload.x;
-            pos.y = payload.y;
-        }
+        pos.x = payload.x;
+        pos.y = payload.y;
 
         renderable.state = payload.state || (payload.isMoving ? 'RUN' : 'IDLE');
     }
@@ -240,8 +254,6 @@ export class GameEngine {
 
         if (payload.stats) {
             this.applyServerStats(entity, payload.stats);
-        } else {
-            this.applyPowerUp(entity, payload.type);
         }
 
         if (entity === this.localPlayerEntity) {
@@ -268,20 +280,6 @@ export class GameEngine {
                 this.world.destroyEntity(entity);
                 return;
             }
-        }
-    }
-
-    applyPowerUp(entity, type) {
-        const player = this.world.getComponent(entity, 'Player');
-        const velocity = this.world.getComponent(entity, 'Velocity');
-        if (!player || !velocity) return;
-
-        if (type === 'SPEED') {
-            applySpeedPowerUp(velocity);
-        } else if (type === 'BOMBS') {
-            player.maxBombs = player.maxBombs ? player.maxBombs + 1 : 2;
-        } else if (type === 'FLAME') {
-            player.bombRange = player.bombRange ? player.bombRange + 1 : 5;
         }
     }
 
@@ -332,64 +330,99 @@ export class GameEngine {
         setTimeout(() => alert(`${winnerName} wins!`), 50);
     }
 
+    handleExplosionChecked(payload) {
+        if (!payload) return;
+
+        this.removeBomb(payload.bombId, payload.cells && payload.cells[0]);
+
+        (payload.destroyedBlocks || []).forEach(cell => {
+            this.updateMapCell(cell.x, cell.y, 2);
+        });
+
+        (payload.spawnedPowerUps || []).forEach(powerUp => {
+            this.createPowerUp(powerUp.x, powerUp.y, powerUp.type);
+        });
+
+        (payload.cells || []).forEach(cell => {
+            this.createExplosion(cell.x, cell.y, 500);
+        });
+    }
+
+    updateMapCell(x, y, newValue) {
+        if (!this.mapData[y]) return;
+
+        this.mapData[y][x] = newValue;
+
+        const tile = this.container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        if (!tile) return;
+
+        tile.className = 'tile tile-floor';
+        tile.style.backgroundImage = 'url("./assets/blocks/block_floor.jpg")';
+    }
+
+    removeBomb(bombId, fallbackCell) {
+        const bombs = this.world.query('Position', 'Bomb');
+
+        for (const entity of bombs) {
+            const pos = this.world.getComponent(entity, 'Position');
+            const bomb = this.world.getComponent(entity, 'Bomb');
+            const sameId = bombId && bomb && bomb.bombId === bombId;
+            const sameCell = fallbackCell && pos && pos.gridX === fallbackCell.x && pos.gridY === fallbackCell.y;
+
+            if (!sameId && !sameCell) continue;
+
+            if (bomb.el && bomb.el.parentNode) {
+                bomb.el.parentNode.removeChild(bomb.el);
+            }
+
+            this.world.destroyEntity(entity);
+            return;
+        }
+    }
+
+    createExplosion(gridX, gridY, duration) {
+        const expEntity = this.world.createEntity();
+        const expDiv = document.createElement('div');
+        expDiv.className = 'explosion';
+        expDiv.style.position = 'absolute';
+        expDiv.style.width = `${TILE_SIZE}px`;
+        expDiv.style.height = `${TILE_SIZE}px`;
+        expDiv.style.left = `${gridX * TILE_SIZE}px`;
+        expDiv.style.top = `${gridY * TILE_SIZE}px`;
+        expDiv.style.zIndex = '7';
+        this.container.appendChild(expDiv);
+
+        this.world.addComponent(expEntity, 'Position', { gridX, gridY, x: gridX * TILE_SIZE, y: gridY * TILE_SIZE });
+        this.world.addComponent(expEntity, 'Explosion', { duration, el: expDiv });
+
+        setTimeout(() => {
+            if (expDiv.parentNode) {
+                expDiv.parentNode.removeChild(expDiv);
+            }
+            this.world.destroyEntity(expEntity);
+        }, duration);
+    }
+
+    createPowerUp(gx, gy, type) {
+        if (!type || this.claimedPowerUps.has(`${gx},${gy}`)) return;
+
+        const pUpEntity = this.world.createEntity();
+        this.world.addComponent(pUpEntity, 'Position', { gridX: gx, gridY: gy, x: gx * TILE_SIZE, y: gy * TILE_SIZE });
+
+        const div = document.createElement('div');
+        div.className = `powerup powerup-${type.toLowerCase()}`;
+        div.style.position = 'absolute';
+        div.style.width = `${TILE_SIZE}px`;
+        div.style.height = `${TILE_SIZE}px`;
+        div.style.left = `${gx * TILE_SIZE}px`;
+        div.style.top = `${gy * TILE_SIZE}px`;
+        div.style.zIndex = '5';
+        this.container.appendChild(div);
+
+        this.world.addComponent(pUpEntity, 'PowerUp', { type, el: div });
+    }
+
     registerSystems() {
-        const updateMapCell = (x, y, newValue) => {
-            if (!this.mapData[y]) return;
-
-            this.mapData[y][x] = newValue;
-
-            const tile = this.container.querySelector(`[data-x="${x}"][data-y="${y}"]`);
-            if (!tile) return;
-
-            tile.className = 'tile tile-floor';
-            tile.style.backgroundImage = 'url("./assets/blocks/block_floor.jpg")';
-        };
-
-        const destroyBoxCallback = (x, y) => {
-            if (this.claimedPowerUps.has(`${x},${y}`)) return;
-            spawnPowerUp(this.world, x, y, this.container, TILE_SIZE);
-        };
-
-        const onPowerUpPicked = (id, type, x, y) => {
-            this.claimedPowerUps.add(`${x},${y}`);
-
-            if (this.localPlayerEntity === null) return;
-
-            const player = this.world.getComponent(this.localPlayerEntity, 'Player');
-            if (player && player.id === id) {
-                this.updateHudStats(this.localPlayerEntity);
-            }
-
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                this.socket.send(JSON.stringify({
-                    type: 'POWERUP_PICKED',
-                    payload: { id, type, x, y }
-                }));
-            }
-        };
-
-        this.world.broadcastMovement = (entity, x, y, gridX, gridY, direction, isMoving) => {
-            const player = this.world.getComponent(entity, 'Player');
-            if (!player || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-
-            this.socket.send(JSON.stringify({
-                type: 'MOVE_STATE',
-                payload: {
-                    id: player.id,
-                    x,
-                    y,
-                    gridX,
-                    gridY,
-                    direction,
-                    isMoving,
-                    state: isMoving ? 'RUN' : 'IDLE',
-                }
-            }));
-        };
-
-        this.world.addSystem((w, dt, now) => movementSystem(w, dt, now, this.mapData, TILE_SIZE));
-        this.world.addSystem((w, dt, now) => bombSystem(w, dt, now, this.mapData, updateMapCell, destroyBoxCallback, TILE_SIZE));
-        this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked));
         this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
     }
 

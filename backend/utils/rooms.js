@@ -2,9 +2,9 @@ import { generateRandomDigits } from "./helpers.js";
 import Player from "./player.js";
 import GameMap from "./map.js";
 import {
-    acceptMovement,
     applyPowerUp,
     bombDelay,
+    canReadInput,
     calculateExplosionCells,
     createPlayerState,
     damagePlayers,
@@ -12,6 +12,8 @@ import {
     publicMove,
     publicPlayer,
     publicStats,
+    updateMovement,
+    updatePlayerInput,
 } from "./gameState.js";
 
 class RoomsHandler {
@@ -100,11 +102,6 @@ class RoomsHandler {
         const room = this.getRoomBySocket(ws);
         if (room) room.dropBomb(ws);
     }
-
-    pickPowerUp(ws, payload) {
-        const room = this.getRoomBySocket(ws);
-        if (room) room.pickPowerUp(ws, payload);
-    }
 }
 
 const config = {
@@ -133,6 +130,8 @@ class Room {
         this.playerStates = new Map();
         this.bombs = new Map();
         this.powerUps = new Map();
+        this.gameLoop = null;
+        this.lastTick = 0;
     }
 
     addPlayer(player) {
@@ -159,14 +158,14 @@ class Room {
         if (this.players.length === 0) {
             clearInterval(this.timer);
             this.timer = null;
-            this.clearBombTimers();
+            this.stopGameLoop();
             return true;
         }
 
         if (this.inGame) {
             clearInterval(this.timer);
             this.timer = null;
-            this.clearBombTimers();
+            this.stopGameLoop();
             this.inGame = false;
             this.inLobby = false;
 
@@ -268,6 +267,7 @@ class Room {
         this.playerStates.clear();
         this.bombs.clear();
         this.powerUps.clear();
+        this.lastTick = Date.now();
 
         this.players.forEach((player, index) => {
             this.playerStates.set(
@@ -275,6 +275,8 @@ class Room {
                 createPlayerState(player, config.starts[index], config.colors[index])
             );
         });
+
+        this.gameLoop = setInterval(() => this.tick(), 16);
     }
 
     handleMove(ws, payload) {
@@ -282,19 +284,28 @@ class Room {
 
         const state = this.getPlayerStateBySocket(ws);
         if (!state) return;
+        if (!canReadInput(state)) return;
 
-        if (acceptMovement(state, payload, this.gameMap.map)) {
-            this.broadcast({
-                type: "player_moved",
-                payload: publicMove(state),
-            });
-            return;
+        updatePlayerInput(state, payload);
+    }
+
+    tick() {
+        if (!this.inGame || !this.gameMap) return;
+
+        const now = Date.now();
+        const dt = now - this.lastTick;
+        this.lastTick = now;
+
+        for (const state of this.playerStates.values()) {
+            if (updateMovement(state, this.gameMap.map, dt)) {
+                this.broadcast({
+                    type: "player_moved",
+                    payload: publicMove(state),
+                });
+            }
+
+            this.pickPowerUpForPlayer(state);
         }
-
-        ws.send(JSON.stringify({
-            type: "player_moved",
-            payload: publicMove(state, true),
-        }));
     }
 
     dropBomb(ws) {
@@ -385,36 +396,6 @@ class Room {
         this.checkWinner();
     }
 
-    pickPowerUp(ws, payload = {}) {
-        if (!this.inGame || !this.gameMap) return;
-
-        const state = this.getPlayerStateBySocket(ws);
-        if (!state || !state.alive) return;
-
-        const x = Number(payload.x);
-        const y = Number(payload.y);
-        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-        if (state.gridX !== x || state.gridY !== y) return;
-
-        const key = this.cellKey(x, y);
-        const powerUp = this.powerUps.get(key);
-        if (!powerUp) return;
-
-        this.powerUps.delete(key);
-        applyPowerUp(state, powerUp.type);
-
-        this.broadcast({
-            type: "powerup_picked",
-            payload: {
-                id: state.id,
-                type: powerUp.type,
-                x,
-                y,
-                stats: publicStats(state),
-            },
-        });
-    }
-
     checkWinner() {
         const alivePlayers = [...this.playerStates.values()].filter(player => player.alive);
         if (alivePlayers.length !== 1) return;
@@ -427,8 +408,30 @@ class Room {
             },
         });
 
-        this.clearBombTimers();
+        this.stopGameLoop();
         this.inGame = false;
+    }
+
+    pickPowerUpForPlayer(state) {
+        if (!state || !state.alive) return;
+
+        const key = this.cellKey(state.gridX, state.gridY);
+        const powerUp = this.powerUps.get(key);
+        if (!powerUp) return;
+
+        this.powerUps.delete(key);
+        applyPowerUp(state, powerUp.type);
+
+        this.broadcast({
+            type: "powerup_picked",
+            payload: {
+                id: state.id,
+                type: powerUp.type,
+                x: powerUp.x,
+                y: powerUp.y,
+                stats: publicStats(state),
+            },
+        });
     }
 
     getPlayerStateBySocket(ws) {
@@ -445,6 +448,15 @@ class Room {
             clearTimeout(bomb.timer);
         }
         this.bombs.clear();
+    }
+
+    stopGameLoop() {
+        if (this.gameLoop) {
+            clearInterval(this.gameLoop);
+            this.gameLoop = null;
+        }
+
+        this.clearBombTimers();
     }
 
     cellKey(x, y) {

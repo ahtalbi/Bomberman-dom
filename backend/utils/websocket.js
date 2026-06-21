@@ -39,9 +39,6 @@ export function handleWebsocket(message, ws) {
         case "DROP_BOMB":
             roomsHandler.dropBomb(ws);
             break;
-        case "POWERUP_PICKED":
-            roomsHandler.pickPowerUp(ws, message.payload);
-            break;
     }
 }
 

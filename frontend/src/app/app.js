@@ -33,7 +33,6 @@ wss.addEventListener("message", (event) => {
     switch (message.type) {
         case "room_update":
         case "lobby_timer":
-            document.body.className = "lobby-page";
             if (!root.querySelector(".conatiner-lobby")) {
                 render(<Lobby />, root);
             }
@@ -97,6 +96,11 @@ wss.addEventListener("message", (event) => {
         case "powerup_picked":
             if (currentGameEngine) {
                 currentGameEngine.handleRemotePowerUpPicked(message.payload);
+            }
+            break;
+        case "explosion_checked":
+            if (currentGameEngine) {
+                currentGameEngine.handleExplosionChecked(message.payload);
             }
             break;
         case "player_damaged":
