@@ -79,19 +79,19 @@ function Game({ grid }) {
                     {nameEl}
                     <div class="score-stats">
                         <div class="score-item">
-                            <span class="score-icon">Lives</span>
+                            <span class="score-icon">❤️</span>
                             {livesEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">Speed</span>
+                            <span class="score-icon">⚡</span>
                             {speedEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">Bombs</span>
+                            <span class="score-icon">💣</span>
                             {bombsEl}
                         </div>
                         <div class="score-item">
-                            <span class="score-icon">Range</span>
+                            <span class="score-icon">🎯</span>
                             {rangeEl}
                         </div>
                     </div>

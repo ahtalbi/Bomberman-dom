@@ -8,17 +8,17 @@ body {
     margin: 0;
 }
 
-body { 
-  font-family: Arial, Helvetica, sans-serif; 
-  color: white; 
-} 
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+}
 
-body.register-page { 
-    height: 100vh; 
-    height: 100dvh; 
+body.register-page {
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     margin: 0;
-    background: #121118 url("./assets/bg_register.jpg") center / cover no-repeat fixed; 
+    background: #121118 url("./assets/scenes/bg_register.jpg") center / cover no-repeat fixed;
 }
 
 body.register-page::before {
@@ -27,18 +27,16 @@ body.register-page::before {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.6),
-        rgba(0, 0, 0, 0.28) 45%,
-        rgba(0, 0, 0, 0) 75%
-    );
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.6),
+            rgba(0, 0, 0, 0.28) 45%,
+            rgba(0, 0, 0, 0) 75%);
 }
 
 body.lobby-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: url("./assets/bg_lobby.jpg") center / cover no-repeat fixed;
+    background: url("./assets/scenes/bg_lobby.jpg") center / cover no-repeat fixed;
 }
 
 body.lobby-page::before {
@@ -47,12 +45,10 @@ body.lobby-page::before {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.62),
-        rgba(0, 0, 0, 0.32) 50%,
-        rgba(0, 0, 0, 0.12)
-    );
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.62),
+            rgba(0, 0, 0, 0.32) 50%,
+            rgba(0, 0, 0, 0.12));
 }
 
 body.game-page {
@@ -60,7 +56,7 @@ body.game-page {
     height: 100dvh;
     overflow: hidden;
     color: #f8fafc;
-    background: url("./assets/bg_game.jpg") center / cover no-repeat fixed;
+    background: url("./assets/scenes/bg_game.jpg") center / cover no-repeat fixed;
 }
 
 body.game-page::before {
@@ -69,12 +65,10 @@ body.game-page::before {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.62),
-        rgba(0, 0, 0, 0.32) 50%,
-        rgba(0, 0, 0, 0.12)
-    );
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.62),
+            rgba(0, 0, 0, 0.32) 50%,
+            rgba(0, 0, 0, 0.12));
 }
 
 #root {
@@ -88,13 +82,29 @@ body.game-page::before {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    background: #1c1726; 
-    border: 4px solid #000000;
-    box-shadow: 
-        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
-        inset -4px -4px 0 0 #100d17,
-        inset 4px 4px 0 0 #3a314c;
+    background: rgba(28, 23, 38, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     transform: translateY(70px);
+}
+
+.register-error:empty {
+    display: none;
+}
+
+.register-error {
+    color: #ff4d4d;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-align: center;
+    background: rgba(255, 77, 77, 0.1);
+    padding: 8px;
+    border: 1px solid rgba(255, 77, 77, 0.3);
 }
 
 body.register-page #root {
@@ -132,12 +142,11 @@ body.game-page #root {
 .lobby-box {
     padding: 30px;
     text-align: center;
-    background: #1c1726;
-    border: 4px solid #000000;
-    box-shadow: 
-        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
-        inset -4px -4px 0 0 #100d17,
-        inset 4px 4px 0 0 #3a314c;
+    background: rgba(28, 23, 38, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .game-box {
@@ -173,7 +182,7 @@ body.game-page #root {
     width: 100%;
     min-height: 48px;
     font-size: 16px;
-    font-family: 'Courier New', Courier, monospace; 
+    font-family: 'Courier New', Courier, monospace;
     text-transform: uppercase;
     box-sizing: border-box;
     border: 4px solid #000000;
@@ -184,7 +193,7 @@ body.game-page #root {
     color: #ffffff;
     background: #2a2435;
     outline: none;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #413852,
         inset 4px 4px 0px 0px #000000;
 }
@@ -199,20 +208,20 @@ body.game-page #root {
     background: #ffc457;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #b78119,
         inset 4px 4px 0px 0px #ffe19e;
 }
 
 .register-button:hover {
     background: #ffd783;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #cc962d,
         inset 4px 4px 0px 0px #ffffff;
 }
 
 .register-button:active {
-    box-shadow: 
+    box-shadow:
         inset 4px 4px 0px 0px #b78119,
         inset -4px -4px 0px 0px #ffe19e;
 }
@@ -230,7 +239,7 @@ body.game-page #root {
     background: #ffc457;
     cursor: pointer;
     border: 4px solid #000000;
-    box-shadow: 
+    box-shadow:
         -4px 4px 0px 0px rgba(0, 0, 0, 0.4),
         inset -4px -4px 0px 0px #b78119,
         inset 4px 4px 0px 0px #ffe19e;
@@ -242,7 +251,7 @@ body.game-page #root {
 
 .sound-button:hover {
     background: #ffd783;
-    box-shadow: 
+    box-shadow:
         -4px 4px 0px 0px rgba(0, 0, 0, 0.4),
         inset -4px -4px 0px 0px #cc962d,
         inset 4px 4px 0px 0px #ffffff;
@@ -250,8 +259,8 @@ body.game-page #root {
 
 .sound-button:active {
     /* Push button inward effect */
-    transform: translate(-2px, 2px); 
-    box-shadow: 
+    transform: translate(-2px, 2px);
+    box-shadow:
         -2px 2px 0px 0px rgba(0, 0, 0, 0.4),
         inset 4px 4px 0px 0px #b78119,
         inset -4px -4px 0px 0px #ffe19e;
@@ -261,7 +270,7 @@ body.game-page #root {
 body.menu-page {
     min-height: 100vh;
     color: #f8fafc;
-    background: url("./assets/bg_lobby.jpg") center / cover no-repeat fixed;
+    background: url("./assets/scenes/bg_lobby.jpg") center / cover no-repeat fixed;
 }
 
 body.menu-page::before {
@@ -270,12 +279,10 @@ body.menu-page::before {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.62),
-        rgba(0, 0, 0, 0.32) 50%,
-        rgba(0, 0, 0, 0.12)
-    );
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.62),
+            rgba(0, 0, 0, 0.32) 50%,
+            rgba(0, 0, 0, 0.12));
 }
 
 body.menu-page #root {
@@ -291,13 +298,12 @@ body.menu-page #root {
     margin: 0 auto;
     padding: 30px;
     text-align: center;
-    background: #1c1726;
+    background: rgba(28, 23, 38, 0.7);
     box-sizing: border-box;
-    border: 4px solid #000000;
-    box-shadow: 
-        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
-        inset -4px -4px 0 0 #100d17,
-        inset 4px 4px 0 0 #3a314c;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .menu-box h1 {
@@ -330,20 +336,20 @@ body.menu-page #root {
     cursor: pointer;
     box-sizing: border-box;
     border: 4px solid #000000;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #b78119,
         inset 4px 4px 0px 0px #ffe19e;
 }
 
 .replay-button:hover {
     background: #ffd783;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #cc962d,
         inset 4px 4px 0px 0px #ffffff;
 }
 
 .replay-button:active {
-    box-shadow: 
+    box-shadow:
         inset 4px 4px 0px 0px #b78119,
         inset -4px -4px 0px 0px #ffe19e;
 }
@@ -356,24 +362,25 @@ body.menu-page #root {
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    padding: 12px;
+    margin: 0;
+    padding: 16px;
     overflow: hidden;
     box-sizing: border-box;
 }
 
 .game-glass {
-    background: #1c1726;
-    padding: 20px;
+    background: rgba(28, 23, 38, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin: 0;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     box-sizing: border-box;
-    border: 4px solid #000000;
-    box-shadow: 
-        -4px 0 #000, 4px 0 #000, 0 -4px #000, 0 4px #000,
-        inset -4px -4px 0 0 #100d17,
-        inset 4px 4px 0 0 #3a314c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .score-bar {
@@ -381,16 +388,17 @@ body.menu-page #root {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 8px 12px 8px;
+    margin: 0;
+    padding: 0 8px 10px 8px;
     box-sizing: border-box;
     border-bottom: 4px solid #000000;
 }
 
 .game-board-frame {
     flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
-    max-width: 100%;
-    max-height: 100%;
 }
 
 .player-name {
@@ -444,7 +452,7 @@ body.menu-page #root {
     transform-origin: top left;
     border: 6px solid #000000;
     outline: none;
-    box-shadow: 
+    box-shadow:
         inset -4px -4px 0px 0px #15111d,
         inset 4px 4px 0px 0px #413852;
 }
@@ -457,25 +465,32 @@ body.menu-page #root {
 
 /* For Chrome, Safari, Edge, and Opera */
 ::-webkit-scrollbar {
-    width: 12px;  /* Blocky, thick layout width */
-    height: 12px; /* For horizontal scrollbars */
+    width: 12px;
+    /* Blocky, thick layout width */
+    height: 12px;
+    /* For horizontal scrollbars */
 }
 
 /* The track background behind the scrollbar handle */
 ::-webkit-scrollbar-track {
-    background: #0d0a12; /* Deep CRT monitor black/dark purple */
-    border-left: 4px solid #000000; /* Sharp border separation */
+    background: #0d0a12;
+    /* Deep CRT monitor black/dark purple */
+    border-left: 4px solid #000000;
+    /* Sharp border separation */
 }
 
 /* The draggable scroll handle block */
 ::-webkit-scrollbar-thumb {
-    background: #ffc457; /* Signature arcade gold */
-    border: 4px solid #000000; /* Creates the blocky pixel outline look */
+    background: #ffc457;
+    /* Signature arcade gold */
+    border: 4px solid #000000;
+    /* Creates the blocky pixel outline look */
 }
 
 /* Handle hover state */
 ::-webkit-scrollbar-thumb:hover {
-    background: #ffd783; /* Lighter gold highlight on hover */
+    background: #ffd783;
+    /* Lighter gold highlight on hover */
 }
 
 /* The corner space where vertical and horizontal scrollbars meet */
@@ -546,9 +561,11 @@ body.menu-page #root {
 .messages::-webkit-scrollbar {
     width: 8px;
 }
+
 .messages::-webkit-scrollbar-track {
     background: #0d0a12;
 }
+
 .messages::-webkit-scrollbar-thumb {
     background: #ffc457;
     border: 2px solid #000;
@@ -570,7 +587,7 @@ body.menu-page #root {
     outline: none;
     box-sizing: border-box;
     border: 4px solid #000000;
-    box-shadow: 
+    box-shadow:
         inset -2px -2px 0px 0px #413852,
         inset 2px 2px 0px 0px #000000;
 }
@@ -592,20 +609,20 @@ body.menu-page #root {
     cursor: pointer;
     box-sizing: border-box;
     border: 4px solid #000000;
-    box-shadow: 
+    box-shadow:
         inset -2px -2px 0px 0px #b78119,
         inset 2px 2px 0px 0px #ffe19e;
 }
 
 .chat button[type="submit"]:hover {
     background: #ffd783;
-    box-shadow: 
+    box-shadow:
         inset -2px -2px 0px 0px #cc962d,
         inset 2px 2px 0px 0px #ffffff;
 }
 
 .chat button[type="submit"]:active {
-    box-shadow: 
+    box-shadow:
         inset 2px 2px 0px 0px #b78119,
         inset -2px -2px 0px 0px #ffe19e;
 }
@@ -613,16 +630,19 @@ body.menu-page #root {
 .tile {
     box-sizing: border-box;
 }
+
 .tile-wall {
     background-image: url("./assets/blocks/block_wall.png");
     background-size: cover;
     image-rendering: pixelated;
 }
+
 .tile-box {
     background-image: url("./assets/blocks/block_exploit.png");
     background-size: cover;
     image-rendering: pixelated;
 }
+
 .tile-ground {
     background-color: #333;
     border: 1px solid #292929;
@@ -635,24 +655,36 @@ body.menu-page #root {
     z-index: 10;
     background-repeat: no-repeat;
     background-size: 832px 3456px;
-    image-rendering: pixelated; 
-    transition: none; 
+    image-rendering: pixelated;
+    transition: none;
 }
 
-.player-white { background-image: url('./assets/player_yellow.png'); }
-.player-red   { background-image: url('./assets/player_red.png'); }
-.player-blue  { background-image: url('./assets/player_blue.png'); }
-.player-black { background-image: url('./assets/player_green.png'); }
+.player-white {
+    background-image: url('./assets/spritesheet/player_yellow.png');
+}
+
+.player-red {
+    background-image: url('./assets/spritesheet/player_red.png');
+}
+
+.player-blue {
+    background-image: url('./assets/spritesheet/player_blue.png');
+}
+
+.player-black {
+    background-image: url('./assets/spritesheet/player_green.png');
+}
 
 .bomb {
     position: absolute;
     width: 64px;
     height: 64px;
     z-index: 6;
-    border-radius: 50%;
-    background: #2563eb;
-    border: 3px solid #93c5fd;
-    box-shadow: inset -6px -7px 0 rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.35);
+    background-image: url('./assets/bombs.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
 }
 
 .explosion {
@@ -677,18 +709,21 @@ body.menu-page #root {
     animation: floatAnimation 1.5s ease-in-out infinite alternate;
 }
 
-.powerup-speed { background: #5eead4; }
-.powerup-bombs { background: #f87171; }
-.powerup-flame { background: #fbbf24; }
-
-@keyframes floatAnimation {
-    0% { transform: translateY(0px); }
-    100% { transform: translateY(-6px); }
+.powerup-speed {
+    background-image: url('./assets/powerups/speed.png');
 }
 
-/* Extra life drop - heart image that appears when a player dies */
-.extra-life-drop {
-    animation: pulse 1s ease-in-out infinite;
+.powerup-bombs {
+    background-image: url('./assets/powerups/bomb_mag.png');
+}
+
+.powerup-flame {
+    background-image: url('./assets/powerups/range.png');
+}
+
+.powerup-heart {
+    background-image: url('./assets/powerups/heart.png');
+    animation: pulse 1s ease-in-out infinite, floatAnimation 1.5s ease-in-out infinite alternate;
 }
 
 @keyframes pulse {
@@ -702,99 +737,21 @@ body.menu-page #root {
     }
 }
 
-/* Win/Loss Pop-up Styles */
-.game-result-popup {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.85);
-    animation: fadeIn 0.3s ease-out;
-}
-
-.game-result-popup-content {
-    background: #1c1726;
-    padding: 40px 50px;
-    border: 6px solid #000000;
-    box-shadow: 
-        -6px 0 #000, 6px 0 #000, 0 -6px #000, 0 6px #000,
-        inset -6px -6px 0 0 #100d17,
-        inset 6px 6px 0 0 #3a314c;
-    text-align: center;
-    animation: slideIn 0.4s ease-out;
-    max-width: min(400px, calc(100vw - 40px));
-}
-
-.game-result-title {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 48px;
-    font-weight: 900;
-    text-transform: uppercase;
-    margin: 0 0 16px 0;
-    text-shadow: 4px 4px 0px #000;
-}
-
-.game-result-popup.win .game-result-title {
-    color: #ffc457;
-}
-
-.game-result-popup.loss .game-result-title {
-    color: #f87171;
-}
-
-.game-result-message {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 16px;
-    color: #ffffff;
-    margin: 0 0 24px 0;
-    line-height: 1.5;
-}
-
-.game-result-button {
-    min-height: 48px;
-    padding: 0 32px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 18px;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: #000000;
-    background: #ffc457;
-    cursor: pointer;
-    box-sizing: border-box;
-    border: 4px solid #000000;
-    box-shadow: 
-        inset -4px -4px 0px 0px #b78119,
-        inset 4px 4px 0px 0px #ffe19e;
-    transition: background 0.2s ease;
-}
-
-.game-result-button:hover {
-    background: #ffd783;
-    box-shadow: 
-        inset -4px -4px 0px 0px #cc962d,
-        inset 4px 4px 0px 0px #ffffff;
-}
-
-.game-result-button:active {
-    box-shadow: 
-        inset 4px 4px 0px 0px #b78119,
-        inset -4px -4px 0px 0px #ffe19e;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideIn {
-    from { 
-        opacity: 0;
-        transform: translateY(-30px) scale(0.9);
+@keyframes floatAnimation {
+    0% {
+        transform: translateY(0px);
     }
-    to { 
-        opacity: 1;
-        transform: translateY(0) scale(1);
+
+    100% {
+        transform: translateY(-6px);
     }
+}
+
+.damaged-blink {
+    animation: blink-effect 0.2s infinite;
+}
+
+@keyframes blink-effect {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }

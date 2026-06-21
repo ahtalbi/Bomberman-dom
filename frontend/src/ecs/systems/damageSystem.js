@@ -40,7 +40,7 @@ export function spawnHeartPowerUp(world, gridX, gridY, container, tileSize = 64)
     heartDiv.style.justifyContent = 'center';
     heartDiv.style.fontSize = '32px';
     heartDiv.style.zIndex = '5';
-    heartDiv.textContent = '❤️';
+    // heartDiv.textContent = '❤️';
     
     container.appendChild(heartDiv);
     
@@ -102,6 +102,7 @@ export function damageSystem(world, now, onPlayerHurt, localPlayerEntity, tileSi
     for (const playerEntity of players) {
         const pPos = world.getComponent(playerEntity, 'Position');
         const player = world.getComponent(playerEntity, 'Player');
+        const renderable = world.getComponent(playerEntity, 'Renderable');
         
         if (player.invincibleUntil && player.invincibleUntil > now) continue;
         
@@ -117,6 +118,17 @@ export function damageSystem(world, now, onPlayerHurt, localPlayerEntity, tileSi
                 player.lives = Math.max(previousLives - 1, 0);
                 player.invincibleUntil = now + 1500;
                 
+                // Visual blink effect
+                if (renderable && renderable.el) {
+                    renderable.el.classList.add('damaged-blink');
+                    setTimeout(() => {
+                        // Re-fetch renderable in case it was removed (e.g. death)
+                        if (renderable.el) {
+                            renderable.el.classList.remove('damaged-blink');
+                        }
+                    }, 1500);
+                }
+
                 // If the player is dead, report death ONCE using guard clause
                 if (player.lives <= 0) {
                     if (player.alreadyReportedDead) break;

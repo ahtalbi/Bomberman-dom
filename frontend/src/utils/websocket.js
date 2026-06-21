@@ -6,6 +6,7 @@ import { setStates } from "../pages/lobby";
 import { setPlayerName as setHudPlayerName } from "../pages/game";
 import { setMessages } from "../components/chat";
 import { GameEngine } from "../ecs/game.js";
+import { setError } from "../pages/register";
 
 let currentGameEngine = null;
 
@@ -145,6 +146,15 @@ export function handleWebsocket(message, root, wss) {
         case "player_quit":
             if (currentGameEngine) {
                 currentGameEngine.removeRemotePlayer(message.playerId);
+            }
+            break;
+
+        // this case for errors (like nickname taken)
+        case "error":
+            if (document.body.className === "register-page") {
+                setError(message.message);
+            } else {
+                alert(message.message);
             }
             break;
     }

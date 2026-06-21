@@ -211,7 +211,6 @@ export class GameEngine {
         }
 
         if (entity === this.localPlayerEntity) {
-            console.log(`[handleRemoteMove] Ignoring local player update for ${payload.id}`);
             return;
         }
 

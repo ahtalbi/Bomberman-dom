@@ -17,7 +17,10 @@ export function handleWebsocket(message, ws) {
                 return;
             }
 
-            roomsHandler.addPlayerToRoom(message.nickname, ws);
+            const error = roomsHandler.addPlayerToRoom(message.nickname, ws);
+            if (error) {
+                sendError(ws, error);
+            }
             break;
 
         // this case to send a message
