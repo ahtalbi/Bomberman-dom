@@ -11,7 +11,6 @@ import {
 import { movementSystem } from './systems/movementSystem.js';
 import { renderSystem } from './systems/renderSystem.js';
 import { bombSystem } from './systems/bombSystem.js';
-import { damageSystem } from './systems/damageSystem.js';
 import { applySpeedPowerUp, powerUpSystem, spawnPowerUp } from './systems/powerUpSystem.js';
 import { setBombs, setLives, setRange, setSpeed, TILE_SIZE } from '../pages/game';
 
@@ -65,9 +64,10 @@ export class GameEngine {
 
             const isLocal = playerId === normalizedLocalPlayerId;
             const playerComp = PlayerComponent(playerId, color, isLocal);
-            playerComp.lives = 3;
-            playerComp.maxBombs = 1;
-            playerComp.bombRange = 2;
+            playerComp.lives = pData.lives ?? 3;
+            playerComp.maxBombs = pData.maxBombs ?? 1;
+            playerComp.bombRange = pData.bombRange ?? 2;
+            playerComp.alive = pData.alive ?? true;
             this.world.addComponent(playerEntity, 'Player', playerComp);
             this.playerEntities.set(playerId, playerEntity);
 
@@ -139,7 +139,6 @@ export class GameEngine {
     dropBomb() {
         if (this.localPlayerEntity === null) return;
 
-        const pos = this.world.getComponent(this.localPlayerEntity, 'Position');
         const player = this.world.getComponent(this.localPlayerEntity, 'Player');
 
         const currentBombs = this.world.query('Position', 'Bomb').filter(bEntity => {
@@ -148,22 +147,20 @@ export class GameEngine {
 
         if (currentBombs.length >= player.maxBombs) return;
 
-        const created = this.createBomb(player.id, pos.gridX, pos.gridY, player.bombRange);
-        if (!created) return;
-
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({
                 type: 'DROP_BOMB',
-                payload: { id: player.id, x: pos.gridX, y: pos.gridY, range: player.bombRange }
+                payload: {}
             }));
         }
     }
 
-    createBomb(ownerId, gridX, gridY, range) {
+    createBomb(ownerId, gridX, gridY, range, bombId = null) {
         const exists = this.world.query('Position', 'Bomb').some(entity => {
             const pos = this.world.getComponent(entity, 'Position');
             const bomb = this.world.getComponent(entity, 'Bomb');
-            return bomb.ownerId === ownerId && pos.gridX === gridX && pos.gridY === gridY;
+            return (bombId && bomb.bombId === bombId) ||
+                (bomb.ownerId === ownerId && pos.gridX === gridX && pos.gridY === gridY);
         });
 
         if (exists) return false;
@@ -182,6 +179,7 @@ export class GameEngine {
         this.world.addComponent(bombEntity, 'Position', { gridX, gridY });
 
         const bombComp = BombComponent(ownerId, 2000, range);
+        bombComp.bombId = bombId;
         bombComp.el = bombDiv;
         this.world.addComponent(bombEntity, 'Bomb', bombComp);
         return true;
@@ -199,7 +197,7 @@ export class GameEngine {
             return;
         }
 
-        if (entity === this.localPlayerEntity) {
+        if (entity === this.localPlayerEntity && !payload.corrected) {
             return;
         }
 
@@ -212,19 +210,24 @@ export class GameEngine {
             return;
         }
 
-        console.log(`[handleRemoteMove] Updating player ${payload.id} to (${payload.gridX}, ${payload.gridY})`);
         vel.direction = payload.direction || vel.direction;
         vel.isMoving = payload.isMoving;
         pos.gridX = payload.gridX;
         pos.gridY = payload.gridY;
         pos.targetX = payload.x;
         pos.targetY = payload.y;
+
+        if (payload.corrected) {
+            pos.x = payload.x;
+            pos.y = payload.y;
+        }
+
         renderable.state = payload.state || (payload.isMoving ? 'RUN' : 'IDLE');
     }
 
     handleRemoteBomb(payload) {
         if (!payload || !payload.id) return;
-        this.createBomb(payload.id, payload.x, payload.y, payload.range || 4);
+        this.createBomb(payload.id, payload.x, payload.y, payload.range || 2, payload.bombId);
     }
 
     handleRemotePowerUpPicked(payload) {
@@ -233,9 +236,17 @@ export class GameEngine {
         this.removePowerUpAt(payload.x, payload.y);
 
         const entity = this.playerEntities.get(String(payload.id));
-        if (entity === undefined || entity === this.localPlayerEntity) return;
+        if (entity === undefined) return;
 
-        this.applyPowerUp(entity, payload.type);
+        if (payload.stats) {
+            this.applyServerStats(entity, payload.stats);
+        } else {
+            this.applyPowerUp(entity, payload.type);
+        }
+
+        if (entity === this.localPlayerEntity) {
+            this.updateHudStats(entity);
+        }
     }
 
     removePowerUpAt(gridX, gridY) {
@@ -274,6 +285,53 @@ export class GameEngine {
         }
     }
 
+    applyServerStats(entity, stats) {
+        const player = this.world.getComponent(entity, 'Player');
+        const velocity = this.world.getComponent(entity, 'Velocity');
+        if (!player || !stats) return;
+
+        player.lives = stats.lives ?? player.lives;
+        player.maxBombs = stats.maxBombs ?? player.maxBombs;
+        player.bombRange = stats.bombRange ?? player.bombRange;
+        player.alive = stats.alive ?? player.alive;
+
+        if (velocity && typeof stats.speed === 'number') {
+            velocity.speed = stats.speed;
+        }
+    }
+
+    handlePlayerDamaged(payload) {
+        if (!payload || !payload.id) return;
+
+        const entity = this.playerEntities.get(String(payload.id));
+        if (entity === undefined) return;
+
+        const player = this.world.getComponent(entity, 'Player');
+        if (!player) return;
+
+        player.lives = payload.lives ?? player.lives;
+        player.alive = payload.alive ?? player.alive;
+
+        if (!player.alive) {
+            const velocity = this.world.getComponent(entity, 'Velocity');
+            if (velocity) velocity.isMoving = false;
+
+            if (entity === this.localPlayerEntity) {
+                this.world.removeComponent(entity, 'Input');
+            }
+        }
+
+        if (entity === this.localPlayerEntity) {
+            setLives(player.lives);
+        }
+    }
+
+    handleGameOver(payload) {
+        this.running = false;
+        const winnerName = payload && payload.winnerName ? payload.winnerName : "A player";
+        setTimeout(() => alert(`${winnerName} wins!`), 50);
+    }
+
     registerSystems() {
         const updateMapCell = (x, y, newValue) => {
             if (!this.mapData[y]) return;
@@ -290,12 +348,6 @@ export class GameEngine {
         const destroyBoxCallback = (x, y) => {
             if (this.claimedPowerUps.has(`${x},${y}`)) return;
             spawnPowerUp(this.world, x, y, this.container, TILE_SIZE);
-        };
-
-        const onPlayerHurt = (entity, id, remainingLives) => {
-            if (entity === this.localPlayerEntity) {
-                setLives(remainingLives);
-            }
         };
 
         const onPowerUpPicked = (id, type, x, y) => {
@@ -337,7 +389,6 @@ export class GameEngine {
 
         this.world.addSystem((w, dt, now) => movementSystem(w, dt, now, this.mapData, TILE_SIZE));
         this.world.addSystem((w, dt, now) => bombSystem(w, dt, now, this.mapData, updateMapCell, destroyBoxCallback, TILE_SIZE));
-        this.world.addSystem((w, dt, now) => damageSystem(w, now, onPlayerHurt, TILE_SIZE));
         this.world.addSystem((w, dt, now) => powerUpSystem(w, onPowerUpPicked));
         this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
     }

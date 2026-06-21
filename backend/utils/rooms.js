@@ -1,6 +1,18 @@
 import { generateRandomDigits } from "./helpers.js";
 import Player from "./player.js";
 import GameMap from "./map.js";
+import {
+    acceptMovement,
+    applyPowerUp,
+    bombDelay,
+    calculateExplosionCells,
+    createPlayerState,
+    damagePlayers,
+    powerUpForCell,
+    publicMove,
+    publicPlayer,
+    publicStats,
+} from "./gameState.js";
 
 class RoomsHandler {
     constructor() {
@@ -78,6 +90,21 @@ class RoomsHandler {
             }
         }
     }
+
+    handleMove(ws, payload) {
+        const room = this.getRoomBySocket(ws);
+        if (room) room.handleMove(ws, payload);
+    }
+
+    dropBomb(ws) {
+        const room = this.getRoomBySocket(ws);
+        if (room) room.dropBomb(ws);
+    }
+
+    pickPowerUp(ws, payload) {
+        const room = this.getRoomBySocket(ws);
+        if (room) room.pickPowerUp(ws, payload);
+    }
 }
 
 const config = {
@@ -102,6 +129,10 @@ class Room {
         this.players = [];
         this.secondsLeft = config.waitTime;
         this.timer = null;
+        this.gameMap = null;
+        this.playerStates = new Map();
+        this.bombs = new Map();
+        this.powerUps = new Map();
     }
 
     addPlayer(player) {
@@ -128,12 +159,14 @@ class Room {
         if (this.players.length === 0) {
             clearInterval(this.timer);
             this.timer = null;
+            this.clearBombTimers();
             return true;
         }
 
         if (this.inGame) {
             clearInterval(this.timer);
             this.timer = null;
+            this.clearBombTimers();
             this.inGame = false;
             this.inLobby = false;
 
@@ -176,23 +209,15 @@ class Room {
                 this.timer = null;
                 this.inLobby = false;
 
-                const gameMap = new GameMap();
-
-                const players = this.players.map((player, index) => ({
-                    id: player.id,
-                    nickname: player.nickname,
-                    color: config.colors[index],
-                    x: config.starts[index].x,
-                    y: config.starts[index].y,
-                }));
+                this.startGame();
 
                 this.players.forEach(player => {
                     player.ws.send(JSON.stringify({
                         type: "game_started",
                         roomId: this.id,
                         playersCount: this.players.length,
-                        grid: gameMap.map,
-                        players,
+                        grid: this.gameMap.map,
+                        players: this.getPublicPlayers(),
                         yourPlayerId: player.id,
                     }));
                 });
@@ -236,6 +261,194 @@ class Room {
             if (player.ws === exceptWs) return;
             player.ws.send(JSON.stringify(message));
         });
+    }
+
+    startGame() {
+        this.gameMap = new GameMap();
+        this.playerStates.clear();
+        this.bombs.clear();
+        this.powerUps.clear();
+
+        this.players.forEach((player, index) => {
+            this.playerStates.set(
+                player.id,
+                createPlayerState(player, config.starts[index], config.colors[index])
+            );
+        });
+    }
+
+    handleMove(ws, payload) {
+        if (!this.inGame || !this.gameMap) return;
+
+        const state = this.getPlayerStateBySocket(ws);
+        if (!state) return;
+
+        if (acceptMovement(state, payload, this.gameMap.map)) {
+            this.broadcast({
+                type: "player_moved",
+                payload: publicMove(state),
+            });
+            return;
+        }
+
+        ws.send(JSON.stringify({
+            type: "player_moved",
+            payload: publicMove(state, true),
+        }));
+    }
+
+    dropBomb(ws) {
+        if (!this.inGame || !this.gameMap) return;
+
+        const state = this.getPlayerStateBySocket(ws);
+        if (!state || !state.alive) return;
+        if (state.activeBombs >= state.maxBombs) return;
+
+        const occupied = [...this.bombs.values()].some(bomb => {
+            return bomb.x === state.gridX && bomb.y === state.gridY;
+        });
+
+        if (occupied) return;
+
+        const bomb = {
+            id: generateRandomDigits(12),
+            ownerId: state.id,
+            x: state.gridX,
+            y: state.gridY,
+            range: state.bombRange,
+            timer: null,
+        };
+
+        state.activeBombs++;
+        bomb.timer = setTimeout(() => this.explodeBomb(bomb.id), bombDelay());
+        this.bombs.set(bomb.id, bomb);
+
+        this.broadcast({
+            type: "bomb_dropped",
+            payload: {
+                id: state.id,
+                bombId: bomb.id,
+                x: bomb.x,
+                y: bomb.y,
+                range: bomb.range,
+            },
+        });
+    }
+
+    explodeBomb(bombId) {
+        const bomb = this.bombs.get(bombId);
+        if (!bomb || !this.gameMap) return;
+
+        this.bombs.delete(bombId);
+
+        const owner = this.playerStates.get(bomb.ownerId);
+        if (owner) owner.activeBombs = Math.max(owner.activeBombs - 1, 0);
+
+        const cells = calculateExplosionCells(bomb.x, bomb.y, bomb.range, this.gameMap.map);
+        const destroyedBlocks = [];
+        const spawnedPowerUps = [];
+
+        for (const cell of cells) {
+            if (!this.gameMap.map[cell.y] || this.gameMap.map[cell.y][cell.x] !== 4) continue;
+
+            this.gameMap.map[cell.y][cell.x] = 2;
+            destroyedBlocks.push(cell);
+
+            const type = powerUpForCell(cell.x, cell.y);
+            if (type) {
+                const key = this.cellKey(cell.x, cell.y);
+                const powerUp = { x: cell.x, y: cell.y, type };
+                this.powerUps.set(key, powerUp);
+                spawnedPowerUps.push(powerUp);
+            }
+        }
+
+        const damagedPlayers = damagePlayers(this.playerStates, cells);
+
+        this.broadcast({
+            type: "explosion_checked",
+            payload: {
+                bombId,
+                cells,
+                destroyedBlocks,
+                spawnedPowerUps,
+            },
+        });
+
+        damagedPlayers.forEach(player => {
+            this.broadcast({
+                type: "player_damaged",
+                payload: player,
+            });
+        });
+
+        this.checkWinner();
+    }
+
+    pickPowerUp(ws, payload = {}) {
+        if (!this.inGame || !this.gameMap) return;
+
+        const state = this.getPlayerStateBySocket(ws);
+        if (!state || !state.alive) return;
+
+        const x = Number(payload.x);
+        const y = Number(payload.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        if (state.gridX !== x || state.gridY !== y) return;
+
+        const key = this.cellKey(x, y);
+        const powerUp = this.powerUps.get(key);
+        if (!powerUp) return;
+
+        this.powerUps.delete(key);
+        applyPowerUp(state, powerUp.type);
+
+        this.broadcast({
+            type: "powerup_picked",
+            payload: {
+                id: state.id,
+                type: powerUp.type,
+                x,
+                y,
+                stats: publicStats(state),
+            },
+        });
+    }
+
+    checkWinner() {
+        const alivePlayers = [...this.playerStates.values()].filter(player => player.alive);
+        if (alivePlayers.length !== 1) return;
+
+        this.broadcast({
+            type: "game_over",
+            payload: {
+                winnerId: alivePlayers[0].id,
+                winnerName: alivePlayers[0].nickname,
+            },
+        });
+
+        this.clearBombTimers();
+        this.inGame = false;
+    }
+
+    getPlayerStateBySocket(ws) {
+        const player = this.players.find(player => player.ws === ws);
+        return player ? this.playerStates.get(player.id) : null;
+    }
+
+    getPublicPlayers() {
+        return [...this.playerStates.values()].map(player => publicPlayer(player));
+    }
+
+    clearBombTimers() {
+        for (const bomb of this.bombs.values()) {
+            clearTimeout(bomb.timer);
+        }
+        this.bombs.clear();
+    }
+
+    cellKey(x, y) {
+        return `${x},${y}`;
     }
 
     getIdRoom() {

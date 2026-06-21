@@ -34,22 +34,13 @@ export function handleWebsocket(message, ws) {
             roomsHandler.broadcastMessage(message.message, ws);
             break;
         case "MOVE_STATE":
-            roomsHandler.broadcastGameMessage(ws, {
-                type: "player_moved",
-                payload: message.payload,
-            });
+            roomsHandler.handleMove(ws, message.payload);
             break;
         case "DROP_BOMB":
-            roomsHandler.broadcastGameMessage(ws, {
-                type: "bomb_dropped",
-                payload: message.payload,
-            });
+            roomsHandler.dropBomb(ws);
             break;
         case "POWERUP_PICKED":
-            roomsHandler.broadcastGameMessage(ws, {
-                type: "powerup_picked",
-                payload: message.payload,
-            });
+            roomsHandler.pickPowerUp(ws, message.payload);
             break;
     }
 }

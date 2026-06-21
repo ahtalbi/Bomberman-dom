@@ -99,6 +99,16 @@ wss.addEventListener("message", (event) => {
                 currentGameEngine.handleRemotePowerUpPicked(message.payload);
             }
             break;
+        case "player_damaged":
+            if (currentGameEngine) {
+                currentGameEngine.handlePlayerDamaged(message.payload);
+            }
+            break;
+        case "game_over":
+            if (currentGameEngine) {
+                currentGameEngine.handleGameOver(message.payload);
+            }
+            break;
         case "error":
             if (document.body.className === "register-page") {
                 setError(message.message);
