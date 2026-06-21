@@ -17,10 +17,8 @@ class Sound {
         this.button.addEventListener("click", () => this.toggle());
 
         document.body.append(this.button);
-        document.addEventListener("click", () => this.play(), { once: true });
 
         this.updateButton();
-        this.play();
     }
 
     play() {

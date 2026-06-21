@@ -1,17 +1,24 @@
-import RoomsHandler from "./rooms.js";
+import RoomsHandler from "./rooms_handler.js";
 
 let roomsHandler = new RoomsHandler();
 
+// this function to handle the web socket
 export function handleWebsocket(message, ws) {
     switch (message.type) {
-        case "nickname_of_the_player":
+        case "register_player":
             if (!message.nickname) {
-                sendError(ws, "Nickname is required");
+                sendError(ws, {
+                    type: "error_nickname",
+                    message: "Can't entere empty nickname"
+                });
                 return;
             }
 
             if (message.nickname.length > 20) {
-                sendError(ws, "Nickname must be less than 20 characters");
+                sendError(ws, {
+                    type: "error_nickname",
+                    message: "Nickname must be less than 20 characters"
+                });
                 return;
             }
 
@@ -19,26 +26,31 @@ export function handleWebsocket(message, ws) {
             break;
         case "chat_message":
             if (!message.message) {
-                sendError(ws, "Can't send empty message");
+                sendError(ws, {
+                    type: "error_message",
+                    message: "Can't send empty message"
+                });
                 return;
             }
 
             if (message.message && message.length > 20) {
-                sendError(ws, "Can't send the message its too long");
+                sendError(ws, {
+                    type: "error_message",
+                    message: "Can't send message too long more than > 20 chars"
+                });
+                return;
             }
-
+            
             roomsHandler.broadcastMessage(message.message, ws);
             break;
     }
 }
 
+// handle disconnect player
 export function handleDisconnect(ws) {
     roomsHandler.removePlayer(ws);
 }
 
 function sendError(ws, message) {
-    ws.send(JSON.stringify({
-        type: "error",
-        message,
-    }));
+    ws.send(JSON.stringify(message));
 }

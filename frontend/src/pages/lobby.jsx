@@ -6,22 +6,16 @@ let [states, setStates] = createSignal({});
 export { setStates };
 
 let roomIdEl = <p>Room ID: </p>;
-let playersEl = <p>Players:  / 4</p>;
+let playersEl = <p>Players: / 4</p>;
 let textEl = <p></p>;
 let timerEl = <p>Timer: </p>;
 
 createEffect(() => {
     const s = states();
     roomIdEl.textContent = `Room ID: ${s.roomId}`;
-    playersEl.textContent = `Players: ${s.playersCount} / 4`;
-    textEl.textContent = s.text || "";
-
-    if (s.gameStarted) {
-        timerEl.textContent = "Timer: Game started";
-    } else {
-        const timerText = (!s.secondsLeft) ? "Waiting for one more player" : `${s.secondsLeft} seconds`;
-        timerEl.textContent = `Timer: ${timerText}`;
-    }
+    playersEl.textContent = `Players: ${s.players?.length} / 4`;
+    textEl.textContent = s.text;
+    timerEl.textContent = s.secondsLeft ? `Timer: ${s.secondsLeft}` : ``;
 });
 
 function Lobby() {
@@ -36,7 +30,7 @@ function Lobby() {
             </div>
             <ChatPlayers />
         </div>
-    )
+    );
 }
 
 export default Lobby;

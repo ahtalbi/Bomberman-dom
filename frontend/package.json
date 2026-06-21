@@ -1,13 +1,15 @@
 {
   "scripts": {
     "build": "npx webpack",
-    "dev": "npx webpack && npx serve"
+    "dev": "nodemon --watch . --exec \"npx webpack && npx serve\""
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/plugin-transform-react-jsx": "^7.28.6",
     "@babel/preset-env": "^7.29.5",
     "babel-loader": "^10.1.1",
+    "nodemon": "^3.1.14",
+    "serve": "^14.2.6",
     "webpack": "^5.107.0",
     "webpack-cli": "^7.0.3"
   }

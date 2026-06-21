@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "nodemon --watch . --ext js,jsx --exec \"node index.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -30,5 +30,8 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
