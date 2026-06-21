@@ -62,7 +62,7 @@ export function spawnHeartPowerUp(world, gridX, gridY, container, tileSize = 64)
  * @param {number} tileSize - The size of each grid tile (default: 64)
  * @param {HTMLElement} container - The game container element
  */
-function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null) {
+export function handlePlayerDeath(world, playerEntity, tileSize = 64, container = null) {
     // Get the player's components
     const position = world.getComponent(playerEntity, 'Position');
     const renderable = world.getComponent(playerEntity, 'Renderable');

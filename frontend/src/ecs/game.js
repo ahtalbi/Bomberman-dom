@@ -54,6 +54,11 @@ export class GameEngine {
             const playerEntity = this.world.createEntity();
             this.playerInfo.set(playerId, pData); // Store original player data
             const playerDiv = document.createElement('div');
+
+            if (pData.disconnected) {
+                return;
+            }
+
             const color = pData.color || "white";
 
             playerDiv.className = `player player-${color}`;

@@ -108,6 +108,7 @@ class Room {
         this.deadPlayers = new Set();
         this.initialPlayerCount = 0; // Track players at game start
         this.timer = null;
+        this.lockedInPlayers = null;
     }
 
     addPlayer(player) {
@@ -119,8 +120,13 @@ class Room {
 
         this.broadcastRoomUpdate();
 
-        if (this.players.length === 2) {
+        if (this.players.length === 2 && !this.inLobby && !this.inGame) {
             this.startCountdown();
+        } else if (this.players.length === 4 && this.inLobby && !this.inGame) {
+            this.inGame = true;
+            this.secondsLeft = config.startTime;
+            this.lockedInPlayers = [...this.players];
+            this.broadcastLobbyTimer();
         }
     }
 
@@ -133,6 +139,29 @@ class Room {
         console.log(`[DEBUG - Disconnect] Room: ${this.id} | SocketID: ${disconnectedSocketId} | PlayerName: ${disconnectedPlayer.nickname}`);
         console.log(`[DEBUG - Math] BEFORE Remove: TotalPlayers: ${this.players.length} | DeadPlayersSetSize: ${this.deadPlayers.size}`);
 
+        if (this.inGame && this.inLobby) {
+            this.players.splice(playerIndex, 1);
+            if (this.lockedInPlayers) {
+                const snapshotPlayer = this.lockedInPlayers.find(p => p.ws === ws);
+                if (snapshotPlayer) snapshotPlayer.disconnected = true;
+            }
+
+            if (this.players.length === 1) {
+                clearInterval(this.timer);
+                this.timer = null;
+                this.inLobby = false;
+                this.inGame = false;
+                this.secondsLeft = config.waitTime;
+                this.lockedInPlayers = null;
+
+                this.broadcast({ type: "lobby_reset" });
+                this.broadcastRoomUpdate();
+            } else {
+                this.broadcastRoomUpdate();
+            }
+            return true;
+        }
+
         this.players.splice(playerIndex, 1);
 
         if (this.players.length === 0) {
@@ -141,20 +170,14 @@ class Room {
             return true;
         }
 
-        if (this.inGame) {
+        if (this.inGame && !this.inLobby) {
             // Mark the disconnected player as "dead" if not already marked
-            if (!this.deadPlayers.has(disconnectedSocketId)) {
-                this.deadPlayers.add(disconnectedSocketId);
-                console.log(`[DEBUG - Math] AFTER Add to deadSet: TotalPlayers: ${this.players.length} | DeadPlayersSetSize: ${this.deadPlayers.size}`);
-            } else {
-                console.log(`[DEBUG] Ignored duplicate death marker for disconnected player: ${disconnectedSocketId}`);
-            }
-
-            this.checkAndDeclareWinner();
+            this.checkWinCondition(disconnectedSocketId);
+            return true;
             return true;
         }
 
-        if (this.players.length === 1 && this.inLobby) {
+        if (this.players.length === 1 && this.inLobby && !this.inGame) {
             clearInterval(this.timer);
             this.timer = null;
             this.inLobby = false;
@@ -169,40 +192,46 @@ class Room {
         return this.players.length - this.deadPlayers.size;
     }
 
-    checkAndDeclareWinner() {
-        const roomId = this.id;
-        console.log(`[DEBUG - Winner Check] Room: ${roomId} | TotalPlayers: ${this.players.length} | DeadPlayers: ${this.deadPlayers.size}`);
+    checkWinCondition(deadSocketId) {
+        try {
+            // 1. Mark as dead on the server
+            if (deadSocketId && !this.deadPlayers.has(deadSocketId)) {
+                this.deadPlayers.add(deadSocketId);
+            }
 
-        if (this.initialPlayerCount <= 1 || this.players.length === 0) {
-            console.log(`[DEBUG - EarlyReturn] InitialCount: ${this.initialPlayerCount} | PlayersLength: ${this.players.length}`);
-            return;
-        }
+            // 2. Check remaining alive players (using the snapshot count)
+            const aliveCount = this.initialPlayerCount - this.deadPlayers.size;
 
-        // Debug: Log each player's alive/dead status
-        this.players.forEach(player => {
-            const isDead = this.deadPlayers.has(player.socketId);
-            console.log(`[DEBUG - AliveCheck] SocketID: ${player.socketId} (${player.nickname}) | IsDead: ${isDead}`);
-        });
-
-        const aliveCount = this.getAlivePlayersCount();
-        console.log(`[DEBUG - FinalResult] Room: ${roomId} | AliveCount: ${aliveCount} | WinTriggered: ${aliveCount === 1}`);
-
-        if (aliveCount === 1) {
-            const winner = this.players.find(p => !this.deadPlayers.has(p.socketId));
-            console.log(`[DEBUG - Winner] WinnerSocketID: ${winner?.socketId} | WinnerName: ${winner?.nickname}`);
-            if (winner) {
+            // 3. IF exactly 1 player remains -> They win!
+            if (aliveCount === 1) {
+                const winner = this.players.find(p => !this.deadPlayers.has(p.socketId));
+                if (winner) {
+                    this.broadcast({
+                        type: "game_won",
+                        winnerName: winner.nickname
+                    });
+                }
+            // 4. IF more than 1 player remains -> Drop a heart
+            } else if (aliveCount > 1 && deadSocketId) {
+                // Find ECS id from the locked-in snapshot (in case they disconnected and were removed from this.players)
+                const deadPlayer = this.lockedInPlayers.find(p => p.socketId === deadSocketId);
+                if (deadPlayer) {
+                    this.broadcast({
+                        type: "player_turned_heart",
+                        playerId: deadPlayer.id 
+                    });
+                }
+            } else if (aliveCount === 0 && this.players.length > 0) {
                 this.broadcast({
                     type: "game_won",
-                    winnerName: winner.nickname,
+                    winnerName: "Nobody - All players eliminated"
                 });
             }
-        } else if (aliveCount === 0 && this.players.length > 0) {
-            // All players are dead (edge case)
-            console.log(`[DEBUG - AllDead] All players eliminated in room ${roomId}`);
-            this.broadcast({
-                type: "game_won",
-                winnerName: "Nobody - All players eliminated",
-            });
+            
+            return aliveCount; // Useful if the caller needs to delete the room when aliveCount <= 1
+        } catch (error) {
+            console.error("[DEBUG - Error] checkWinCondition failed:", error);
+            return -1;
         }
     }
 
@@ -216,6 +245,7 @@ class Room {
             if (this.secondsLeft <= 0 && !this.inGame) {
                 this.inGame = true;
                 this.secondsLeft = config.startTime;
+                this.lockedInPlayers = [...this.players];
                 this.broadcastLobbyTimer();
                 return;
             }
@@ -225,22 +255,31 @@ class Room {
                 this.timer = null;
                 this.inLobby = false;
 
-                this.initialPlayerCount = this.players.length; // Set the initial count
+                this.initialPlayerCount = this.lockedInPlayers.length; // Use snapshot
+                
+                // Add players who disconnected during the 3s countdown to deadPlayers
+                this.lockedInPlayers.forEach(p => {
+                    if (p.disconnected) {
+                        this.deadPlayers.add(p.socketId);
+                    }
+                });
+
                 const gameMap = new GameMap();
 
-                const players = this.players.map((player, index) => ({
+                const players = this.lockedInPlayers.map((player, index) => ({
                     id: player.id,
                     nickname: player.nickname,
                     color: config.colors[index],
                     x: config.starts[index].x,
                     y: config.starts[index].y,
+                    disconnected: player.disconnected || false
                 }));
 
                 this.players.forEach(player => {
                     player.ws.send(JSON.stringify({
                         type: "game_started",
                         roomId: this.id,
-                        playersCount: this.players.length,
+                        playersCount: this.lockedInPlayers.length,
                         grid: gameMap.map,
                         players,
                         yourPlayerId: player.id,

@@ -58,24 +58,13 @@ export function handleWebsocket(message, ws) {
             const room = roomsHandler.getRoomBySocket(ws);
             const player = room ? room.players.find(p => p.ws === ws) : null;
 
-            // **DUPLICATE GUARD (THE FILTER)**: Check if this is a new death event
-            if (room && room.inGame && !room.deadPlayers.has(player?.socketId)) {
-                // Valid, new death event - process it
-                room.deadPlayers.add(player.socketId);
-
-                const alivePlayersCount = room.players.length - room.deadPlayers.size;
-                console.log(`[DEBUG - Math] ${player.nickname} died. Alive remaining: ${alivePlayersCount}`);
-                console.log(`[Game Event] Player ${player.nickname} (ID: ${player.id}) was eliminated in room ${room.id}.`);
-
-                // Only trigger game_won if exactly 1 player remains alive
-                if (alivePlayersCount === 1) {
-                    room.checkAndDeclareWinner();
-                    // Explicitly delete the room so ghost players don't persist
-                    roomsHandler.Rooms.delete(room.id);
+            if (room && room.inGame && player) {
+                // Completely replaced the old math! The unified function handles it all.
+                const aliveRemaining = room.checkWinCondition(player.socketId);
+                
+                if (aliveRemaining <= 1) {
+                    roomsHandler.Rooms.delete(room.id); // Clean up the room
                 }
-            } else if (room && player?.socketId) {
-                // Duplicate event detected - ignore it silently but log for debugging
-                console.log(`[DEBUG] Ignored duplicate death event from: ${player.socketId}`);
             }
             break;
     }

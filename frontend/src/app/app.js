@@ -11,6 +11,7 @@ import Sound from "../utils/sound";
 import { setMessages } from "../components/chat";
 
 import { GameEngine } from "../ecs/game.js"; 
+import { handlePlayerDeath } from "../ecs/systems/damageSystem.js"; 
 
 const root = document.getElementById("root");
 const wss = new WebSocket(`ws://${window.location.hostname}:5000`);
@@ -43,6 +44,23 @@ wss.addEventListener("message", (event) => {
                 playersCount: message.playersCount,
                 secondsLeft: message.secondsLeft,
                 text: message.text,
+            });
+            break;
+
+        case "lobby_reset":
+            if (currentGameEngine) {
+                currentGameEngine.destroy();
+                currentGameEngine = null;
+            }
+            document.body.className = "lobby-page";
+            if (!root.querySelector(".conatiner-lobby")) {
+                render(<Lobby />, root);
+            }
+            setStates({
+                roomId: "",
+                playersCount: 1,
+                secondsLeft: 10,
+                text: "Waiting for more players",
             });
             break;
 
@@ -85,6 +103,18 @@ wss.addEventListener("message", (event) => {
             }
             document.body.className = "menu-page";
             render(<WinMenu winnerName={message.winnerName} />, root);
+            break;
+
+        case "player_turned_heart":
+            if (currentGameEngine) {
+                const entity = currentGameEngine.playerEntities.get(String(message.playerId));
+                if (entity !== undefined) {
+                    handlePlayerDeath(currentGameEngine.world, entity, 64);
+                    
+                    currentGameEngine.world.destroyEntity(entity);
+                    currentGameEngine.playerEntities.delete(String(message.playerId));
+                }
+            }
             break;
 
         case "chat_message":
