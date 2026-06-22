@@ -79,6 +79,13 @@ export function handlePlayerDamaged(payload) {
     const player = this.world.getComponent(entity, 'Player');
     if (!player) return;
 
+    const renderable = this.world.getComponent(entity, 'Renderable');
+    if (renderable && renderable.el) {
+        renderable.el.classList.remove('player-damaged');
+        void renderable.el.offsetWidth;
+        renderable.el.classList.add('player-damaged');
+    }
+
     player.lives = payload.lives ?? player.lives;
     player.alive = payload.alive ?? player.alive;
 

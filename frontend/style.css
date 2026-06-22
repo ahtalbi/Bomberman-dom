@@ -685,6 +685,27 @@ body.menu-page #root {
     background-image: url('./assets/spritesheet/player_green.png');
 }
 
+.player-damaged {
+    animation: playerDamageFlicker 0.7s steps(1, end);
+}
+
+@keyframes playerDamageFlicker {
+    0%, 100% {
+        opacity: 1;
+        filter: none;
+    }
+
+    12%, 36%, 60%, 84% {
+        opacity: 0.25;
+        filter: brightness(2.4);
+    }
+
+    24%, 48%, 72% {
+        opacity: 1;
+        filter: brightness(1.6);
+    }
+}
+
 .bomb {
     position: absolute;
     width: 64px;
