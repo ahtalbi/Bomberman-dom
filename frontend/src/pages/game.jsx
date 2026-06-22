@@ -34,8 +34,8 @@ createEffect(() => { rangeEl.textContent = range(); });
 function Game({ grid }) {
     const boardWidth = grid[0].length * TILE_SIZE;
     const boardHeight = grid.length * TILE_SIZE;
-    const boardDisplayWidth = boardWidth + GRID_BORDER_SIZE * 2 * 0.95;
-    const boardDisplayHeight = boardHeight + GRID_BORDER_SIZE * 2 * 0.95;
+    const boardDisplayWidth = (boardWidth + GRID_BORDER_SIZE * 2) * 0.80;
+    const boardDisplayHeight = (boardHeight + GRID_BORDER_SIZE * 2) * 0.80;
     const rows = [];
     for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
         const cells = [];
@@ -91,7 +91,7 @@ function Game({ grid }) {
                     <div
                         id="game-container"
                         class="game-grid"
-                        style={`position:relative;width:${boardWidth}px;height:${boardHeight}px;transform:scale(0.95);`}
+                        style={`position:relative;width:${boardWidth}px;height:${boardHeight}px;transform:scale(0.80);`}
                     >
                         {rows}
                     </div>
