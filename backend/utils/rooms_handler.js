@@ -9,6 +9,9 @@ class RoomsHandler {
 
     addRoom() {
         let room = new Room();
+        room.onGameOver = () => {
+            this.Rooms.delete(room.id);
+        };
         let id = room.id;
         this.Rooms.set(id, room);
         return room;
@@ -21,7 +24,7 @@ class RoomsHandler {
         const lastKey = [...this.Rooms.keys()].at(-1);
         const lastRoom = this.Rooms.get(lastKey);
 
-        if (lastRoom && lastRoom.length < 4 && !lastRoom.inGame) {
+        if (lastRoom && lastRoom.length < 4 && !lastRoom.inGame && !lastRoom.isGameOver) {
             if (lastRoom.players.some(p => p.nickname === nickname)) {
                 return "Nickname already taken in this room";
             }

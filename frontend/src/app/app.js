@@ -4,15 +4,20 @@ import Register, { setError } from "../pages/register";
 import Game from "../pages/game";
 import Menu from "../pages/menu";
 import Lobby from "../pages/lobby";
+import WinMenu from "../pages/WinMenu.jsx";
+import KickedMenu from "../pages/KickedMenu.jsx";
 import { setStates } from "../pages/lobby";
 import { setPlayerName as setHudPlayerName } from "../pages/game";
 import Sound from "../utils/sound";
 import { setMessages } from "../components/chat";
 
 import { GameEngine } from "../ecs/game.js"; 
+import { handlePlayerDeath } from "../ecs/systems/damageSystem.js";
+import { TILE_SIZE } from "../pages/game";
 
 const root = document.getElementById("root");
 const wss = new WebSocket("ws://localhost:5000");
+window.socket = wss;
 const sound = new Sound("./assets/sounds/background_music.mp3");
 let currentGameEngine = null;
 
@@ -20,6 +25,7 @@ sound.init();
 
 router.on("/", () => {
     document.body.className = "register-page";
+    setMessages([]);
     render(<Register wss={wss} />, root);
 });
 
@@ -41,6 +47,24 @@ wss.addEventListener("message", (event) => {
                 secondsLeft: message.secondsLeft,
                 text: message.text,
             });
+            break;
+
+        case "lobby_reset":
+            if (currentGameEngine) {
+                currentGameEngine.destroy();
+                currentGameEngine = null;
+            }
+            document.body.className = "lobby-page";
+            if (!root.querySelector(".conatiner-lobby")) {
+                render(<Lobby />, root);
+            }
+            setStates({
+                roomId: "",
+                playersCount: 1,
+                secondsLeft: 20,
+                text: "Waiting for more players",
+            });
+            setMessages([]);
             break;
 
         case "game_started":
@@ -65,6 +89,36 @@ wss.addEventListener("message", (event) => {
                     engine.init(message.yourPlayerId, message.players || []);
                     
                     currentGameEngine = engine;
+
+                    if (document.hidden) {
+                        wss.send(JSON.stringify({ type: "leave_room" }));
+
+                        currentGameEngine.destroy();
+                        currentGameEngine = null;
+
+                        document.body.className = "menu-page";
+                        root.innerHTML = '';
+                        root.appendChild(KickedMenu());
+                        return; 
+                    }
+
+                    document.addEventListener("visibilitychange", function onAFK() {
+                        if (document.hidden) {
+                            document.removeEventListener("visibilitychange", onAFK);
+
+                            wss.send(JSON.stringify({ type: "leave_room" }));
+
+                            if (currentGameEngine) {
+                                currentGameEngine.destroy();
+                                currentGameEngine = null;
+                            }
+
+                            document.body.className = "menu-page";
+                            root.innerHTML = '';
+                            root.appendChild(KickedMenu());
+                        }
+                    });
+
                 } else {
                     console.error("Game container was not found");
                 }
@@ -76,6 +130,28 @@ wss.addEventListener("message", (event) => {
             render(<Menu />, root);
             break;
             
+        case "game_won":
+            if (currentGameEngine) {
+                currentGameEngine.destroy();
+            }
+            document.body.className = "menu-page";
+            root.innerHTML = '';
+            root.appendChild(WinMenu({ winnerName: message.winnerName }));
+            break;
+
+        case "player_turned_heart":
+            if (currentGameEngine) {
+                const entity = currentGameEngine.playerEntities.get(String(message.playerId));
+                if (entity !== undefined) {
+                    if (typeof handlePlayerDeath === 'function') {
+                        handlePlayerDeath(currentGameEngine.world, entity, TILE_SIZE);
+                    }
+                    currentGameEngine.world.destroyEntity(entity);
+                    currentGameEngine.playerEntities.delete(String(message.playerId));
+                }
+            }
+            break;
+
         case "chat_message":
             setMessages(prev => [...prev, {
                 nickname: message.nickname || "Player",

@@ -182,19 +182,40 @@ class GameEngine {
     }
 
     checkWinner() {
-        const alivePlayers = [...this.playerStates.values()].filter(player => player.alive);
-        if (alivePlayers.length !== 1) return;
+        if (typeof this.checkWinCondition === "function") {
+            [...this.playerStates.values()].forEach(state => {
+                if (!state.alive) {
+                    const player = this.lockedInPlayers ? this.lockedInPlayers.find(p => p.id === state.id) : null;
+                    if (player && !this.deadPlayers.has(player.socketId)) {
+                        this.checkWinCondition(player.socketId);
+                    }
+                }
+            });
 
-        this.broadcast({
-            type: "game_over",
-            payload: {
-                winnerId: alivePlayers[0].id,
-                winnerName: alivePlayers[0].nickname,
-            },
-        });
+            const aliveCount = this.getAlivePlayersCount();
+            if (aliveCount <= 1) {
+                this.stopGameLoop();
+                this.inGame = false;
+                this.isGameOver = true;
+                if (this.onGameOver) this.onGameOver();
+            }
+        } else {
+            const alivePlayers = [...this.playerStates.values()].filter(player => player.alive);
+            if (alivePlayers.length !== 1) return;
 
-        this.stopGameLoop();
-        this.inGame = false;
+            this.broadcast({
+                type: "game_over",
+                payload: {
+                    winnerId: alivePlayers[0].id,
+                    winnerName: alivePlayers[0].nickname,
+                },
+            });
+
+            this.stopGameLoop();
+            this.inGame = false;
+            this.isGameOver = true;
+            if (this.onGameOver) this.onGameOver();
+        }
     }
 
     pickPowerUpForPlayer(state) {

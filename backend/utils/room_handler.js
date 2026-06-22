@@ -3,8 +3,8 @@ import Player from "./player.js";
 import GameEngine from "./game_engine.js";
 
 const LOBBY_CONFIG = {
-    waitTime: 10,
-    startTime: 3,
+    waitTime: 20,
+    startTime: 10,
     waitingText: "Waiting for players",
     startingText: "Starting the game",
 };
@@ -13,10 +13,14 @@ class Room extends GameEngine {
     constructor() {
         super();
         this.id = generateRandomDigits();
+        this.inLobby = false;
         this.inGame = false;
         this.players = [];
         this.secondsLeft = LOBBY_CONFIG.waitTime;
         this.timer = null;
+        this.deadPlayers = new Set();
+        this.initialPlayerCount = 0;
+        this.lockedInPlayers = null;
     }
 
     addPlayer(player) {
@@ -28,29 +32,47 @@ class Room extends GameEngine {
 
         this.broadcastLobbyUpdate();
 
-        if (this.players.length === 2) {
+        if (this.players.length === 2 && !this.inLobby && !this.inGame) {
             this.startCountdown();
-        }
-
-        if (this.players.length === 4 && !this.inGame) {
-            clearInterval(this.timer);
-            this.timer = null;
+        } else if (this.players.length === 4 && this.inLobby && !this.inGame) {
+            this.inGame = true;
             this.secondsLeft = LOBBY_CONFIG.startTime;
-            this.startCountdown();
+            this.lockedInPlayers = [...this.players];
+            this.broadcastLobbyUpdate();
         }
     }
 
     removePlayer(ws) {
         const playerIndex = this.players.findIndex(player => player.ws === ws);
-        const disconnectedPlayer = playerIndex !== -1 ? this.players[playerIndex] : null;
-
         if (playerIndex === -1) return false;
 
-        this.players.splice(playerIndex, 1);
+        const disconnectedPlayer = this.players[playerIndex];
+        const disconnectedSocketId = disconnectedPlayer.socketId;
 
-        if (this.inGame && disconnectedPlayer) {
-            this.playerStates.delete(disconnectedPlayer.id);
+        if (this.inGame && this.inLobby) {
+            this.players.splice(playerIndex, 1);
+            if (this.lockedInPlayers) {
+                const snapshotPlayer = this.lockedInPlayers.find(p => p.ws === ws);
+                if (snapshotPlayer) snapshotPlayer.disconnected = true;
+            }
+
+            if (this.players.length === 1) {
+                clearInterval(this.timer);
+                this.timer = null;
+                this.inLobby = false;
+                this.inGame = false;
+                this.secondsLeft = LOBBY_CONFIG.waitTime;
+                this.lockedInPlayers = null;
+
+                this.broadcast({ type: "lobby_reset" });
+                this.broadcastLobbyUpdate();
+            } else {
+                this.broadcastLobbyUpdate();
+            }
+            return true;
         }
+
+        this.players.splice(playerIndex, 1);
 
         if (this.players.length === 0) {
             clearInterval(this.timer);
@@ -59,19 +81,24 @@ class Room extends GameEngine {
             return true;
         }
 
-        if (this.inGame) {
-            if ([...this.playerStates.values()].filter(p => p.alive).length === 0) {
+        if (this.inGame && !this.inLobby) {
+            if (disconnectedPlayer) {
+                this.playerStates.delete(disconnectedPlayer.id);
+            }
+            const aliveRemaining = this.checkWinCondition(disconnectedSocketId);
+            if (aliveRemaining <= 1) {
                 this.stopGameLoop();
                 this.inGame = false;
+                this.isGameOver = true;
+                if (this.onGameOver) this.onGameOver();
             }
-
-            this.broadcastLobbyUpdate();
             return true;
         }
 
-        if (this.players.length === 1 && !this.inGame) {
+        if (this.players.length === 1 && this.inLobby && !this.inGame) {
             clearInterval(this.timer);
             this.timer = null;
+            this.inLobby = false;
             this.secondsLeft = LOBBY_CONFIG.waitTime;
         }
 
@@ -79,7 +106,49 @@ class Room extends GameEngine {
         return true;
     }
 
+    getAlivePlayersCount() {
+        return this.initialPlayerCount - this.deadPlayers.size;
+    }
+
+    checkWinCondition(deadSocketId) {
+        try {
+            if (deadSocketId && !this.deadPlayers.has(deadSocketId)) {
+                this.deadPlayers.add(deadSocketId);
+            }
+
+            const aliveCount = this.initialPlayerCount - this.deadPlayers.size;
+
+            if (aliveCount === 1) {
+                const winner = this.players.find(p => !this.deadPlayers.has(p.socketId));
+                if (winner) {
+                    this.broadcast({
+                        type: "game_won",
+                        winnerName: winner.nickname
+                    });
+                }
+            } else if (aliveCount > 1 && deadSocketId) {
+                const deadPlayer = this.lockedInPlayers.find(p => p.socketId === deadSocketId);
+                if (deadPlayer) {
+                    this.broadcast({
+                        type: "player_turned_heart",
+                        playerId: deadPlayer.id
+                    });
+                }
+            } else if (aliveCount === 0 && this.players.length > 0) {
+                this.broadcast({
+                    type: "game_won",
+                    winnerName: "Nobody - All players eliminated"
+                });
+            }
+
+            return aliveCount;
+        } catch (error) {
+            return -1;
+        }
+    }
+
     startCountdown() {
+        this.inLobby = true;
         this.broadcastLobbyUpdate();
 
         this.timer = setInterval(() => {
@@ -88,6 +157,7 @@ class Room extends GameEngine {
             if (this.secondsLeft <= 0 && !this.inGame) {
                 this.inGame = true;
                 this.secondsLeft = LOBBY_CONFIG.startTime;
+                this.lockedInPlayers = [...this.players];
                 this.broadcastLobbyUpdate();
                 return;
             }
@@ -95,6 +165,15 @@ class Room extends GameEngine {
             if (this.secondsLeft <= 0 && this.inGame) {
                 clearInterval(this.timer);
                 this.timer = null;
+                this.inLobby = false;
+
+                this.initialPlayerCount = this.lockedInPlayers.length;
+
+                this.lockedInPlayers.forEach(p => {
+                    if (p.disconnected) {
+                        this.deadPlayers.add(p.socketId);
+                    }
+                });
 
                 this.startGame(this.players);
 
@@ -102,7 +181,7 @@ class Room extends GameEngine {
                     player.ws.send(JSON.stringify({
                         type: "game_started",
                         roomId: this.id,
-                        playersCount: this.players.length,
+                        playersCount: this.lockedInPlayers.length,
                         grid: this.gameMap.map,
                         players: this.getPublicPlayers(),
                         yourPlayerId: player.id,

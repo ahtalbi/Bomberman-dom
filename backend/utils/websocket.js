@@ -39,6 +39,15 @@ export function handleWebsocket(message, ws) {
         case "DROP_BOMB":
             roomsHandler.dropBomb(ws);
             break;
+        case "leave_room":
+            roomsHandler.removePlayer(ws);
+            break;
+        case "POWERUP_PICKED":
+            roomsHandler.broadcastGameMessage(ws, {
+                type: "powerup_picked",
+                payload: message.payload,
+            });
+            break;
     }
 }
 

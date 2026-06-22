@@ -6,6 +6,7 @@ import {
     PlayerComponent
 } from '../components.js';
 import { renderSystem } from '../systems/renderSystem.js';
+import { powerUpSystem } from '../systems/powerUpSystem.js';
 import { TILE_SIZE } from '../../pages/game';
 import { ANIMATION_ROWS, SPRITE_COLUMNS, SPRITE_ROWS } from './constants.js';
 
@@ -68,6 +69,22 @@ export function init(localPlayerId, allPlayers) {
 
 export function registerSystems() {
     this.world.addSystem((w, dt, now) => renderSystem(w, dt, now, ANIMATION_ROWS));
+    
+    // Register the local power-up collision system
+    this.world.addSystem((w, dt, now) => powerUpSystem(w, (playerId, type, gridX, gridY) => {
+        if (type === 'HEART' && this.localPlayerEntity !== null) {
+            // Update the HUD immediately when a heart is picked up
+            this.updateHudStats(this.localPlayerEntity);
+            
+            // Broadcast heart pickup to all players so they remove it from their screen
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({
+                    type: 'POWERUP_PICKED',
+                    payload: { id: playerId, type: type, x: gridX, y: gridY }
+                }));
+            }
+        }
+    }));
 }
 
 export function gameLoop(now) {
