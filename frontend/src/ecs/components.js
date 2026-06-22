@@ -50,21 +50,3 @@ export const BombComponent = (ownerId, timer = 2000, range = 2) => ({
     range: range,
     exploded: false
 });
-
-export const ExplosionComponent = (duration = 500) => ({
-    duration: duration
-});
-
-export const PowerUpComponent = (type) => ({
-    type: type, 
-    pickedUp: false
-});
-
-export const BehaviorComponent = () => ({
-    fastShoesLevel: 1,
-    bombs: {
-        max: 1,
-        current: 0,
-        range: 2
-    }
-});
