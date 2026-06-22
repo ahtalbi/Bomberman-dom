@@ -61,9 +61,6 @@ export const PowerUpComponent = (type) => ({
 });
 
 export const BehaviorComponent = () => ({
-    ghostMode: false,
-    throwable: false,
-    detonator: false,
     fastShoesLevel: 1,
     bombs: {
         max: 1,
