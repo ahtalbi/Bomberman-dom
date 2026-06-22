@@ -124,7 +124,7 @@ npm run build
 
 ```bash
 cd ../backend
-node index.js
+npm run dev
 ```
 
 Then open your browser and navigate to `http://localhost:5000`.
