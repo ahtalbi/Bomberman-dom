@@ -13,7 +13,6 @@ class Room extends GameEngine {
     constructor() {
         super();
         this.id = generateRandomDigits();
-        this.inLobby = false;
         this.inGame = false;
         this.players = [];
         this.secondsLeft = LOBBY_CONFIG.waitTime;
@@ -27,19 +26,31 @@ class Room extends GameEngine {
             throw new Error("Room is full");
         }
 
-        this.broadcastRoomUpdate();
+        this.broadcastLobbyUpdate();
 
         if (this.players.length === 2) {
+            this.startCountdown();
+        }
+
+        if (this.players.length === 4 && !this.inGame) {
+            clearInterval(this.timer);
+            this.timer = null;
+            this.secondsLeft = LOBBY_CONFIG.startTime;
             this.startCountdown();
         }
     }
 
     removePlayer(ws) {
         const playerIndex = this.players.findIndex(player => player.ws === ws);
+        const disconnectedPlayer = playerIndex !== -1 ? this.players[playerIndex] : null;
 
         if (playerIndex === -1) return false;
 
         this.players.splice(playerIndex, 1);
+
+        if (this.inGame && disconnectedPlayer) {
+            this.playerStates.delete(disconnectedPlayer.id);
+        }
 
         if (this.players.length === 0) {
             clearInterval(this.timer);
@@ -49,35 +60,27 @@ class Room extends GameEngine {
         }
 
         if (this.inGame) {
-            clearInterval(this.timer);
-            this.timer = null;
-            this.stopGameLoop();
-            this.inGame = false;
-            this.inLobby = false;
+            if ([...this.playerStates.values()].filter(p => p.alive).length === 0) {
+                this.stopGameLoop();
+                this.inGame = false;
+            }
 
-            this.players[0].ws.send(JSON.stringify({
-                type: "room_alone",
-                winner: true,
-            }));
-
-            this.players = [];
+            this.broadcastLobbyUpdate();
             return true;
         }
 
-        if (this.players.length === 1 && this.inLobby) {
+        if (this.players.length === 1 && !this.inGame) {
             clearInterval(this.timer);
             this.timer = null;
-            this.inLobby = false;
             this.secondsLeft = LOBBY_CONFIG.waitTime;
         }
 
-        this.broadcastRoomUpdate();
+        this.broadcastLobbyUpdate();
         return true;
     }
 
     startCountdown() {
-        this.inLobby = true;
-        this.broadcastLobbyTimer();
+        this.broadcastLobbyUpdate();
 
         this.timer = setInterval(() => {
             this.secondsLeft--;
@@ -85,14 +88,13 @@ class Room extends GameEngine {
             if (this.secondsLeft <= 0 && !this.inGame) {
                 this.inGame = true;
                 this.secondsLeft = LOBBY_CONFIG.startTime;
-                this.broadcastLobbyTimer();
+                this.broadcastLobbyUpdate();
                 return;
             }
 
             if (this.secondsLeft <= 0 && this.inGame) {
                 clearInterval(this.timer);
                 this.timer = null;
-                this.inLobby = false;
 
                 this.startGame(this.players);
 
@@ -109,7 +111,7 @@ class Room extends GameEngine {
                 return;
             }
 
-            this.broadcastLobbyTimer();
+            this.broadcastLobbyUpdate();
         }, 1000);
     }
 
@@ -121,23 +123,13 @@ class Room extends GameEngine {
         });
     }
 
-    broadcastRoomUpdate() {
+    broadcastLobbyUpdate() {
         this.broadcast({
-            type: "room_update",
+            type: "lobby_update",
             roomId: this.id,
             playersCount: this.players.length,
-            secondsLeft: this.timer ? this.secondsLeft : null,
-            text: this.timer ? this.getLobbyText() : "Waiting for more players",
-        });
-    }
-
-    broadcastLobbyTimer() {
-        this.broadcast({
-            type: "lobby_timer",
-            roomId: this.id,
-            playersCount: this.players.length,
-            secondsLeft: this.secondsLeft,
-            text: this.getLobbyText(),
+            secondsLeft: this.secondsLeft == LOBBY_CONFIG.waitTime ? 0 : this.secondsLeft,
+            text: this.inGame ? LOBBY_CONFIG.startingText : LOBBY_CONFIG.waitingText,
         });
     }
 
@@ -146,14 +138,6 @@ class Room extends GameEngine {
             if (player.ws === exceptWs) return;
             player.ws.send(JSON.stringify(message));
         });
-    }
-
-    getLobbyText() {
-        return this.inGame ? LOBBY_CONFIG.startingText : LOBBY_CONFIG.waitingText;
-    }
-
-    getIdRoom() {
-        return this.id;
     }
 
     get length() {

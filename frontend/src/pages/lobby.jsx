@@ -14,14 +14,9 @@ createEffect(() => {
     const s = states();
     roomIdEl.textContent = `Room ID: ${s.roomId}`;
     playersEl.textContent = `Players: ${s.playersCount} / 4`;
-    textEl.textContent = s.text || "";
-
-    if (s.gameStarted) {
-        timerEl.textContent = "Timer: Game started";
-    } else {
-        const timerText = (!s.secondsLeft) ? "Waiting for one more player" : `${s.secondsLeft} seconds`;
-        timerEl.textContent = `Timer: ${timerText}`;
-    }
+    textEl.textContent = s.text;
+    if (s.secondsLeft) timerEl.textContent = "Time : " + s.secondsLeft;
+    else timerEl.textContent = "";
 });
 
 function Lobby() {

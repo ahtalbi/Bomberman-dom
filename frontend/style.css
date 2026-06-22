@@ -461,6 +461,12 @@ body.menu-page #root {
         inset 4px 4px 0px 0px #413852;
 }
 
+.zoom-container {
+    transform-origin: center center;
+    max-width: 100%;
+    overflow: hidden;
+}
+
 .grid-row {
     display: flex;
 }
@@ -696,8 +702,7 @@ body.menu-page #root {
     width: 64px;
     height: 64px;
     z-index: 7;
-    background: rgba(255, 196, 87, 0.92);
-    box-shadow: inset 0 0 0 6px rgba(255, 80, 42, 0.8);
+    background-image: url('./assets/explosion.gif');
     image-rendering: pixelated;
 }
 

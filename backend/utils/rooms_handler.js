@@ -9,8 +9,9 @@ class RoomsHandler {
 
     addRoom() {
         let room = new Room();
-        let id = room.getIdRoom();
+        let id = room.id;
         this.Rooms.set(id, room);
+        return room;
     }
 
     addPlayerToRoom(nickname, ws) {
@@ -26,8 +27,7 @@ class RoomsHandler {
             }
             lastRoom.addPlayer(new Player(nickname, ws));
         } else {
-            this.addRoom();
-            this.Rooms.get([...this.Rooms.keys()].at(-1)).addPlayer(new Player(nickname, ws));
+            this.addRoom().addPlayer(new Player(nickname, ws));
         }
         return null;
     }

@@ -31,8 +31,7 @@ wss.addEventListener("open", (ws) => {
 wss.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     switch (message.type) {
-        case "room_update":
-        case "lobby_timer":
+        case "lobby_update":
             if (!root.querySelector(".conatiner-lobby")) {
                 render(<Lobby />, root);
             }
