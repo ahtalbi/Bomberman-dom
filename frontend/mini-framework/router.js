@@ -25,6 +25,7 @@ export class Router {
 
     listen(onError404) {
         navigation.addEventListener("navigate", (event) => {
+            if (event.navigationType === 'reload') return;
             const url = new URL(event.destination.url);
             
             event.intercept({

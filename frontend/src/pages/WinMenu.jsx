@@ -12,8 +12,11 @@ export default function WinMenu(props) {
             window.socket = null; 
         }
 
-        // Hard reload to wipe JS memory and start from a clean slate
-        window.location.href = '/';
+        // Hard reload using replace + timeout to avoid SPA routing race conditions
+        window.location.replace('/');
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
     });
 
     return (

@@ -48,7 +48,7 @@ class RoomsHandler {
     removePlayer(ws) {
         for (const [roomId, room] of this.Rooms) {
             if (!room.removePlayer(ws)) continue;
-            
+
             // Only delete the room when ALL connected players have left
             if (room.length === 0) {
                 this.Rooms.delete(roomId);
@@ -85,8 +85,8 @@ class RoomsHandler {
 }
 
 const config = {
-    waitTime: 10,
-    startTime: 3,
+    waitTime: 20,
+    startTime: 10,
     waitingText: "Waiting for players",
     startingText: "Starting the game",
     colors: ["white", "red", "blue", "black"],
@@ -136,8 +136,6 @@ class Room {
 
         const disconnectedPlayer = this.players[playerIndex];
         const disconnectedSocketId = disconnectedPlayer.socketId;
-        console.log(`[DEBUG - Disconnect] Room: ${this.id} | SocketID: ${disconnectedSocketId} | PlayerName: ${disconnectedPlayer.nickname}`);
-        console.log(`[DEBUG - Math] BEFORE Remove: TotalPlayers: ${this.players.length} | DeadPlayersSetSize: ${this.deadPlayers.size}`);
 
         if (this.inGame && this.inLobby) {
             this.players.splice(playerIndex, 1);
@@ -212,14 +210,14 @@ class Room {
                         winnerName: winner.nickname
                     });
                 }
-            // 4. IF more than 1 player remains -> Drop a heart
+                // 4. IF more than 1 player remains -> Drop a heart
             } else if (aliveCount > 1 && deadSocketId) {
                 // Find ECS id from the locked-in snapshot (in case they disconnected and were removed from this.players)
                 const deadPlayer = this.lockedInPlayers.find(p => p.socketId === deadSocketId);
                 if (deadPlayer) {
                     this.broadcast({
                         type: "player_turned_heart",
-                        playerId: deadPlayer.id 
+                        playerId: deadPlayer.id
                     });
                 }
             } else if (aliveCount === 0 && this.players.length > 0) {
@@ -228,10 +226,9 @@ class Room {
                     winnerName: "Nobody - All players eliminated"
                 });
             }
-            
+
             return aliveCount; // Useful if the caller needs to delete the room when aliveCount <= 1
         } catch (error) {
-            console.error("[DEBUG - Error] checkWinCondition failed:", error);
             return -1;
         }
     }
@@ -257,7 +254,7 @@ class Room {
                 this.inLobby = false;
 
                 this.initialPlayerCount = this.lockedInPlayers.length; // Use snapshot
-                
+
                 // Add players who disconnected during the 3s countdown to deadPlayers
                 this.lockedInPlayers.forEach(p => {
                     if (p.disconnected) {

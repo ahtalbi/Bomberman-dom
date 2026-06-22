@@ -5,13 +5,14 @@ import Game from "../pages/game";
 import Menu from "../pages/menu";
 import Lobby from "../pages/lobby";
 import WinMenu from "../pages/WinMenu.jsx";
+import KickedMenu from "../pages/KickedMenu.jsx";
 import { setStates } from "../pages/lobby";
 import { setPlayerName as setHudPlayerName } from "../pages/game";
 import Sound from "../utils/sound";
 import { setMessages } from "../components/chat";
 
-import { GameEngine } from "../ecs/game.js"; 
-import { handlePlayerDeath } from "../ecs/systems/damageSystem.js"; 
+import { GameEngine } from "../ecs/game.js";
+import { handlePlayerDeath } from "../ecs/systems/damageSystem.js";
 
 const root = document.getElementById("root");
 const wss = new WebSocket(`ws://${window.location.hostname}:5000`);
@@ -66,12 +67,12 @@ wss.addEventListener("message", (event) => {
 
         case "game_started":
             document.body.className = "game-page";
-            
+
             render(<Game grid={message.grid} />, root);
-            
+
             setTimeout(() => {
                 const gameContainer = document.getElementById("game-container");
-                
+
                 if (gameContainer) {
                     if (currentGameEngine) {
                         currentGameEngine.destroy();
@@ -84,8 +85,47 @@ wss.addEventListener("message", (event) => {
 
                     const engine = new GameEngine(gameContainer, message.grid, wss);
                     engine.init(message.yourPlayerId, message.players || []);
-                    
+
                     currentGameEngine = engine;
+
+                    // Immediately check if the player is already AFK before they even start playing
+                    if (document.hidden) {
+                        if (window.socket) {
+                            window.socket.close();
+                            window.socket = null;
+                        }
+                        wss.close();
+
+                        currentGameEngine.destroy();
+                        currentGameEngine = null;
+
+                        document.body.className = "menu-page";
+                        root.innerHTML = '';
+                        root.appendChild(KickedMenu());
+                        return; // Stop further listeners
+                    }
+
+                    // AFK / Tab-switch kick: handle future tab switches during the match
+                    document.addEventListener("visibilitychange", function onAFK() {
+                        if (document.hidden) {
+                            document.removeEventListener("visibilitychange", onAFK);
+
+                            if (window.socket) {
+                                window.socket.close();
+                                window.socket = null;
+                            }
+                            wss.close();
+
+                            if (currentGameEngine) {
+                                currentGameEngine.destroy();
+                                currentGameEngine = null;
+                            }
+
+                            document.body.className = "menu-page";
+                            root.innerHTML = '';
+                            root.appendChild(KickedMenu());
+                        }
+                    });
                 } else {
                     console.error("Game container was not found");
                 }
@@ -111,7 +151,7 @@ wss.addEventListener("message", (event) => {
                 const entity = currentGameEngine.playerEntities.get(String(message.playerId));
                 if (entity !== undefined) {
                     handlePlayerDeath(currentGameEngine.world, entity, 64);
-                    
+
                     currentGameEngine.world.destroyEntity(entity);
                     currentGameEngine.playerEntities.delete(String(message.playerId));
                 }
@@ -119,7 +159,7 @@ wss.addEventListener("message", (event) => {
             break;
 
         case "chat_message":
-            setMessages(prev => [...prev ,message.message]);
+            setMessages(prev => [...prev, message.message]);
             break;
         case "player_moved":
             if (currentGameEngine) {
