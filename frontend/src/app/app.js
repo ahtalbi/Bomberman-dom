@@ -11,12 +11,12 @@ import { setPlayerName as setHudPlayerName } from "../pages/game";
 import Sound from "../utils/sound";
 import { setMessages } from "../components/chat";
 
-import { GameEngine } from "../ecs/game.js"; 
+import { GameEngine } from "../ecs/game.js";
 import { handlePlayerDeath } from "../ecs/systems/damageSystem.js";
 import { TILE_SIZE } from "../pages/game";
 
 const root = document.getElementById("root");
-const wss = new WebSocket("ws://localhost:5000");
+const wss = new WebSocket(`ws://${window.location.hostname}:5000`);
 window.socket = wss;
 const sound = new Sound("./assets/sounds/background_music.mp3");
 let currentGameEngine = null;
@@ -69,12 +69,12 @@ wss.addEventListener("message", (event) => {
 
         case "game_started":
             document.body.className = "game-page";
-            
+
             render(<Game grid={message.grid} />, root);
-            
+
             setTimeout(() => {
                 const gameContainer = document.getElementById("game-container");
-                
+
                 if (gameContainer) {
                     if (currentGameEngine) {
                         currentGameEngine.destroy();
@@ -87,7 +87,7 @@ wss.addEventListener("message", (event) => {
 
                     const engine = new GameEngine(gameContainer, message.grid, wss);
                     engine.init(message.yourPlayerId, message.players || []);
-                    
+
                     currentGameEngine = engine;
 
                     if (document.hidden) {
@@ -99,7 +99,7 @@ wss.addEventListener("message", (event) => {
                         document.body.className = "menu-page";
                         root.innerHTML = '';
                         root.appendChild(KickedMenu());
-                        return; 
+                        return;
                     }
 
                     document.addEventListener("visibilitychange", function onAFK() {
@@ -129,7 +129,7 @@ wss.addEventListener("message", (event) => {
             document.body.className = "menu-page";
             render(<Menu />, root);
             break;
-            
+
         case "game_won":
             if (currentGameEngine) {
                 currentGameEngine.destroy();
