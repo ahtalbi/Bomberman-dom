@@ -8,6 +8,7 @@ const INPUT_RATE = 30;
 const INPUT_BURST = 8;
 const INPUT_MUTE_TIME = 1000;
 const SNAP_THRESHOLD = 32;
+const SPEED_DURATION = 10000;
 
 export function createPlayerState(player, start, color) {
     return {
@@ -27,6 +28,8 @@ export function createPlayerState(player, start, color) {
         activeBombs: 0,
         bombRange: 2,
         speed: 2.5,
+        baseSpeed: 2.5,
+        speedBoostUntil: 0,
         lastMoveAt: Date.now(),
         inputDirection: null,
         inputTokens: INPUT_BURST,
@@ -197,6 +200,7 @@ export function applyPowerUp(state, type) {
         state.bombRange += 1;
     } else if (type === "SPEED") {
         state.speed = Math.min(state.speed + 1, MAX_SPEED);
+        state.speedBoostUntil = Date.now() + SPEED_DURATION;
     }
 }
 
@@ -260,6 +264,15 @@ export function powerUpForCell(x, y) {
 
     const types = ["SPEED", "BOMBS", "FLAME"];
     return types[Math.floor(unit(seed * 2) * types.length)];
+}
+
+export function isSpeedBoostExpired(state) {
+    if (state.speedBoostUntil === 0) return false;
+    if (Date.now() < state.speedBoostUntil) return false;
+
+    state.speed = state.baseSpeed;
+    state.speedBoostUntil = 0;
+    return true;
 }
 
 export function bombDelay() {

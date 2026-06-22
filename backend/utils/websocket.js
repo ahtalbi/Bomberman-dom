@@ -1,4 +1,4 @@
-import RoomsHandler from "./rooms.js";
+import RoomsHandler from "./rooms_handler.js";
 
 let roomsHandler = new RoomsHandler();
 
