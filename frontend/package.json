@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "npx webpack",
-    "dev": "nodemon --watch . --exec \"npx webpack && npx serve\""
+    "dev": "nodemon --watch src --exec \"npx webpack && npx serve\""
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
